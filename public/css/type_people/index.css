@@ -1,0 +1,59 @@
+/* Estilos para centrar textos de cabecera de tabla */
+.table-centered th {
+    text-align: center;
+}
+
+/* Estilos para centrar texto de una columna del DataTabla */
+.dt-center {
+    text-align: center;
+}
+
+/* Estilo de la X en modal para close */
+.modal-header .close {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    margin: -10px -10px -10px auto;
+    background-color: #ffffff !important;  /* Asegura que el fondo sea completamente blanco */
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    display: flex;
+    justify-content: center;  /* Centra horizontalmente */
+    align-items: center;  /* Centra verticalmente */
+    font-size: 16px;
+    color: #000;
+    font-weight: bold;
+    opacity: 1;  /* Asegura que no haya opacidad */
+}
+
+.modal-header .close:hover {
+    background-color: #f8f9fa;
+}
+
+/* Estilos para la lista de personas actuales */
+#currentuser ul {
+    list-style: none; /* Quita los estilos de lista */
+    padding-left: 0;
+}
+
+#currentuser li {
+    display: block;
+    padding: 5px 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+/* Alto máximo de la lista de usuarios */
+#currentuser {
+    max-height: 300px; /* Ajusta este valor al tamaño máximo que desees */
+    overflow-y: auto;  /* Habilita el desplazamiento vertical cuando sea necesario */
+    padding-right: 10px; /* Añadir un pequeño espacio en el lado derecho para la barra de desplazamiento */
+}
+
+
+/** ESTILOS PARA MULTI SELECT **/
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    color: black;
+    width: auto;
+}

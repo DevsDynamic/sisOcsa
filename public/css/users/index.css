@@ -1,0 +1,97 @@
+/* Estilos para centrar textos de cabecera de tabla */
+.table-centered th {
+    text-align: center;
+}
+
+/* Estilos para centrar texto de una columna del DataTabla */
+.dt-center {
+    text-align: center;
+}
+
+/* Estilos de campos de status y access en modal show*/
+.alert-success {
+    color: #28a745 !important;
+    background-color: #d4edda !important;
+    border-color: #23923d !important;
+}
+
+.alert-danger {
+    color: #dc3545 !important;
+    background-color: #f8d7da !important;
+    border-color: #d32535 !important;
+}
+
+.alert i {
+    font-size: 1.2rem; /* Ajusta el tamaño del ícono */
+}
+
+/* Espacio en icono de status y access*/
+#status-icon,
+#access-icon
+ {
+    margin-right: 8px;
+}
+
+/* Estilo de la X en modal para close */
+.modal-header .close {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    margin: -10px -10px -10px auto;
+    background-color: #ffffff !important;  /* Asegura que el fondo sea completamente blanco */
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    display: flex;
+    justify-content: center;  /* Centra horizontalmente */
+    align-items: center;  /* Centra verticalmente */
+    font-size: 16px;
+    color: #000;
+    font-weight: bold;
+    opacity: 1;  /* Asegura que no haya opacidad */
+}
+
+.modal-header .close:hover {
+    background-color: #f8f9fa;
+}
+
+/* Estilo para input de documento en modal ver usuario */
+.input-like {
+    display: block;
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    cursor: not-allowed;
+}
+
+/* Estilos para la lista de proyectos actuales */
+#currentproject ul {
+    list-style: none; /* Quita los estilos de lista */
+    padding-left: 0;
+}
+
+#currentproject li {
+    display: block;
+    padding: 5px 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+/* Alto máximo de la lista de usuarios */
+#currentproject {
+    max-height: 300px; /* Ajusta este valor al tamaño máximo que desees */
+    overflow-y: auto;  /* Habilita el desplazamiento vertical cuando sea necesario */
+    padding-right: 10px; /* Añadir un pequeño espacio en el lado derecho para la barra de desplazamiento */
+}
+
+/** ESTILOS PARA MULTI SELECT **/
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    color: black;
+    width: auto;
+}
