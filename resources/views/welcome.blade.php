@@ -111,7 +111,7 @@
                             <th>Altitude</th>
                             <th>GPS Date</th>
                             <th>Odometer</th>
-                            {{-- <th>UUID</th> --}}
+                            <th>UUID</th>
                         </tr>
                     </thead>
                     <tbody>

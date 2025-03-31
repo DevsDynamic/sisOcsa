@@ -11,7 +11,11 @@
 
             <form id="formEditCustomer" method="POST" autocomplete="off" enctype="multipart/form-data">
                 @csrf      
-                @method('PUT') <!-- Método para editar -->      
+                @method('PUT') <!-- Método para editar -->    
+                
+                <!-- Campo oculto para el tipo -->
+                <input type="hidden" name="type" id="modalType">
+                
                 <div class="modal-body">
                     ¿Está seguro que desea <strong>editar</strong> al <span class="entity"></span> con código <strong><span class="textcode"></span></strong>?
                     <input type="hidden" id="hiddenIDCustomer" name="user_id" class="form-control">

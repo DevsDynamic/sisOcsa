@@ -109,8 +109,8 @@ class PersonController extends Controller
     public function indexTableCO()
     {
         $people = Person::leftJoin('users as u', 'people.user_id', 'u.id')
-                            ->join('type_documents as td', 'people.type_document_id', 'td.id')
-                            ->join('type_people as tp', 'people.type_person_id', 'tp.id')        
+                            ->leftjoin('type_documents as td', 'people.type_document_id', 'td.id')
+                            ->leftjoin('type_people as tp', 'people.type_person_id', 'tp.id')        
                             ->select(
                                     'people.id AS id',
                                     'u.username AS username',
@@ -144,7 +144,9 @@ class PersonController extends Controller
                                 }
                                 // editar cliente
                                 if (auth()->user()->can('people.edit')) {
-                                    $buttons .= '<a href="" data-target="#modal-edit" data-toggle="modal" data-id="' . $person->id . '">
+                                    $buttons .= '<a href="" data-target="#modal-edit" data-toggle="modal" 
+                                                    data-id="' . $person->id . '"
+                                                    data-type="co">
                                                     <button class="btn btn-warning btn-sm mr-1 mb-1" title="Editar cliente">
                                                         <i class="fas fa-edit"></i> Editar
                                                     </button>
@@ -188,8 +190,8 @@ class PersonController extends Controller
     public function indexTableCP()
     {
         $people = Person::leftJoin('users as u', 'people.user_id', 'u.id')
-                            ->join('type_documents as td', 'people.type_document_id', 'td.id')
-                            ->join('type_people as tp', 'people.type_person_id', 'tp.id')        
+                            ->leftjoin('type_documents as td', 'people.type_document_id', 'td.id')
+                            ->leftjoin('type_people as tp', 'people.type_person_id', 'tp.id')        
                             ->select(
                                     'people.id AS id',
                                     'u.username AS username',
@@ -223,7 +225,9 @@ class PersonController extends Controller
                                 }
                                 // editar cliente
                                 if (auth()->user()->can('people.edit')) {
-                                    $buttons .= '<a href="" data-target="#modal-edit" data-toggle="modal" data-id="' . $person->id . '">
+                                    $buttons .= '<a href="" data-target="#modal-edit" data-toggle="modal" 
+                                                    data-id="' . $person->id . '"
+                                                    data-type="cp">
                                                     <button class="btn btn-warning btn-sm mr-1 mb-1" title="Editar cliente">
                                                         <i class="fas fa-edit"></i> Editar
                                                     </button>
@@ -283,6 +287,12 @@ class PersonController extends Controller
             'email.required_if' => 'El correo electrónico es obligatorio cuando el tipo de usuario es "CO".',
             'email.email' => 'El correo electrónico debe ser una dirección válida.',
             'email.unique' => 'El correo electrónico ya está registrado.',
+            'phone_number.regex' => 'El número de teléfono debe contener exactamente 9 dígitos numéricos.',
+            'birthdate.date' => 'La fecha de nacimiento debe ser una fecha válida.',
+            'address.string' => 'La dirección debe ser una cadena de texto.',
+            'address.max' => 'La dirección no puede tener más de 255 caracteres.',
+            'token.string' => 'El token debe ser una cadena de texto.',
+            'token.max' => 'El token no puede tener más de 500 caracteres.',
         ];
 
         // Validar los datos del formulario
@@ -292,7 +302,17 @@ class PersonController extends Controller
             'full_name' => 'required|unique:people|string|max:255',
             'type_person'=> 'required',
             'type' => 'required|in:co,cp', // Solo se permiten cp y co
-            'email' => 'required_if:type,co|email:rfc|unique:people,email', // Obligatorio solo si type es "co"
+            //'email' => 'required_if:type,co|email:rfc|unique:people,email', // Obligatorio solo si type es "co"
+            'email' => [
+                'nullable', // Permitir que no se envíe
+                'required_if:type,co', // Solo obligatorio si el tipo es "co"
+                'email:rfc', // Validar formato solo si se envía
+                Rule::unique('people', 'email')->ignore($request->email) // Evitar la validación de unicidad si está vacío
+            ],
+            'birthdate' => 'nullable|date',
+            'address' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|regex:/^[0-9]{9}$/',
+            'token' => 'nullable|string|max:500',
         ], $messages);
 
         // Si la validación falla, devolver errores
@@ -308,7 +328,12 @@ class PersonController extends Controller
                 'type_document_id' => $request->type_document,
                 'document_number' => $request->document_number,
                 'full_name' => $request->full_name,
-                'type_person_id' => $request->type_person
+                'type_person_id' => $request->type_person,
+                'email' => $request->type === 'co' ? $request->email : null,
+                'birthdate' => $request->type === 'co' ? $request->birthdate : null,
+                'address' => $request->type === 'co' ? $request->address : null,
+                'phone_number' => $request->type === 'co' ? $request->phone_number : null,
+                'token' => $request->type === 'co' ? $request->token : null,
             ]);
     
             // Respuesta con mensaje de éxito
@@ -333,23 +358,28 @@ class PersonController extends Controller
         } else {
             $html='';
 
-            $customer = Customer::join('type_documents AS td', 'customers.type_document_id', 'td.id')
-                                ->join('companies AS c', 'customers.company_id', 'c.id')
-                                ->join('type_customers AS tc', 'customers.type_customer_id', 'tc.id')
-                                ->select(
-                                'customers.id AS id',
-                                'td.name AS type_document',
-                                'customers.document_number AS document_number',
-                                'customers.full_name AS full_name',
-                                'c.business_name AS company',
-                                'tc.name AS type_customer',
-                                'customers.status AS status',
-                                'customers.created_at AS created_date'                            
-                                )
-                                ->where('customers.id', $id)
-                                ->first();
+            $person = Person::leftJoin('users as u', 'people.user_id', 'u.id')
+                            ->leftjoin('type_documents as td', 'people.type_document_id', 'td.id')
+                            ->leftjoin('type_people as tp', 'people.type_person_id', 'tp.id')        
+                            ->select(
+                                    'people.id AS id',
+                                    'u.username AS username',
+                                    'td.name AS type_document',
+                                    'people.document_number AS document_number',
+                                    'people.full_name AS full_name',
+                                    'people.birthdate AS birthdate',
+                                    'people.address AS address',
+                                    'people.email AS email',
+                                    'people.phone_number AS phone_number',
+                                    'tp.name AS type_person',
+                                    'people.token AS token',
+                                    'people.status AS status',
+                                    'people.created_at AS created_date'                            
+                                    )  
+                            ->where('people.id', $id)                           
+                            ->first();
             
-            $html = $customer;          
+            $html = $person;          
         }
         return response()->json(['html' => $html]);
     }
@@ -364,26 +394,30 @@ class PersonController extends Controller
         } else {
             $html='';
 
-            $customer = Customer::join('type_documents AS td', 'customers.type_document_id', 'td.id')
-                                ->join('companies AS c', 'customers.company_id', 'c.id')
-                                ->join('type_customers AS tc', 'customers.type_customer_id', 'tc.id')
+            $person = Person::leftJoin('users as u', 'people.user_id', 'u.id')
+                                ->leftjoin('type_documents as td', 'people.type_document_id', 'td.id')
+                                ->leftjoin('type_people as tp', 'people.type_person_id', 'tp.id')        
                                 ->select(
-                                'customers.id AS id',
-                                'td.id AS type_document_id',
-                                'td.name AS type_document',
-                                'customers.document_number AS document_number',
-                                'customers.full_name AS full_name',
-                                'c.id AS company_id',
-                                'c.business_name AS company',
-                                'tc.id AS type_customer_id',
-                                'tc.name AS type_customer',
-                                'customers.status AS status',
-                                'customers.created_at AS created_date'                            
-                                )
-                                ->where('customers.id', $id)
+                                        'people.id AS id',
+                                        'u.username AS username',
+                                        'td.name AS type_document',
+                                        'td.id AS type_document_id',
+                                        'people.document_number AS document_number',
+                                        'people.full_name AS full_name',
+                                        'people.birthdate AS birthdate',
+                                        'people.address AS address',
+                                        'people.email AS email',
+                                        'people.phone_number AS phone_number',
+                                        'tp.name AS type_person',
+                                        'tp.id AS type_person_id',
+                                        'people.token AS token',
+                                        'people.status AS status',
+                                        'people.created_at AS created_date'                            
+                                        )  
+                                ->where('people.id', $id)                           
                                 ->first();
             
-            $html = $customer;          
+            $html = $person;          
         }
         return response()->json(['html' => $html]);
     }
@@ -391,8 +425,16 @@ class PersonController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Customer $customer)
+    public function update(Request $request, $id)
     {
+        $person = Person::find($id);
+
+        if (!$person) {
+            return response()->json([
+                'error' => 'Cliente no encontrado.'
+            ], 404);
+        }
+
         // Mensajes de error personalizados
         $messages = [
             'type_document.required' => 'El tipo de documento es obligatorio.',
@@ -404,42 +446,77 @@ class PersonController extends Controller
             'full_name.unique' => 'El nombre ingresado ya existe.',
             'full_name.string' => 'El campo nombre debe ser una cadena de texto.',
             'full_name.max' => 'El campo nombre no puede tener más de 255 caracteres.',
-            'company.required' => 'La empresa es obligatoria.',
-            'type_customer.required' => 'El tipo de cliente es obligatorio.',
+            'type_person.required' => 'El tipo de cliente es obligatorio.',
+            'type.required' => 'El tipo de usuario es obligatorio.',
+            'type.in' => 'El tipo de usuario debe ser "CP" o "CO".',
+            'email.required_if' => 'El correo electrónico es obligatorio cuando el tipo de usuario es "CO".',
+            'email.email' => 'El correo electrónico debe ser una dirección válida.',
+            'email.unique' => 'El correo electrónico ya está registrado.',
+            'phone_number.regex' => 'El número de teléfono debe contener exactamente 9 dígitos numéricos.',
+            'birthdate.date' => 'La fecha de nacimiento debe ser una fecha válida.',
+            'address.string' => 'La dirección debe ser una cadena de texto.',
+            'address.max' => 'La dirección no puede tener más de 255 caracteres.',
+            'token.string' => 'El token debe ser una cadena de texto.',
+            'token.max' => 'El token no puede tener más de 500 caracteres.',
         ];
-    
+
         // Validar los datos del formulario
         $validator = Validator::make($request->all(), [
             'type_document' => 'required',
-            'document_number' => 'required|string|max:50|unique:customers,document_number,' . $customer->id,
-            'full_name' => 'required|string|max:255|unique:customers,full_name,' . $customer->id,
-            'company' => 'required',
-            'type_customer' => 'required',
+            'document_number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('people', 'document_number')->ignore($person->id)
+            ],
+            'full_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('people', 'full_name')->ignore($person->id)
+            ],
+            'type_person' => 'required',
+            'type' => 'required|in:co,cp',
+            'email' => [
+                'nullable',
+                'required_if:type,co',
+                'email:rfc',
+                Rule::unique('people', 'email')->ignore($person->id)
+            ],
+            'birthdate' => 'nullable|date',
+            'address' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|regex:/^[0-9]{9}$/',
+            'token' => 'nullable|string|max:255',
         ], $messages);
-    
+
         // Si la validación falla, devolver errores
         if ($validator->fails()) {
             return response()->json([
                 'errors' => $validator->errors()
             ], 422);
         }
-    
+
         try {
-            // Actualizar el cliente
-            $customer->update([
+            // Actualizar los datos
+            $person->update([
                 'type_document_id' => $request->type_document,
                 'document_number' => $request->document_number,
                 'full_name' => $request->full_name,
-                'company_id' => $request->company,
-                'type_customer_id' => $request->type_customer
+                'type_person_id' => $request->type_person,
+                'email' => $request->type === 'co' ? $request->email : null,
+                'birthdate' => $request->type === 'co' ? $request->birthdate : null,
+                'address' => $request->type === 'co' ? $request->address : null,
+                'phone_number' => $request->type === 'co' ? $request->phone_number : null,
+                'token' => $request->type === 'co' ? $request->token : null,
             ]);
-    
-            // Respuesta con mensaje de éxito
+
             return response()->json([
-                'success' => 'Cliente <strong>' . $customer->full_name . '</strong> actualizado exitosamente.'
+                'message' => 'Cliente <strong>' . $person->full_name . '</strong> actualizado exitosamente.'
             ]);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al actualizar el cliente. ' . $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Error al actualizar el cliente. ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -454,13 +531,13 @@ class PersonController extends Controller
     public function changeStatus(Request $request)
     {
         $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'register_id' => 'required|exists:people,id',
             'status_action' => 'required|in:activar,inactivar'
         ]);
 
-        $customer = Customer::find($request->customer_id);
+        $person = Person::find($request->register_id);
 
-        if (!$customer) {
+        if (!$person) {
             return response()->json([
                 'error' => 'Cliente no encontrado.'
             ], 404);
@@ -473,19 +550,19 @@ class PersonController extends Controller
             $newStatus = $request->status_action === 'activar' ? 1 : 0;
 
             // Actualizar el estado del rol
-            $customer->status = $newStatus;
-            $customer->save();
+            $person->status = $newStatus;
+            $person->save();
 
             DB::commit();
 
             return response()->json([
-                'success' => 'Cliente <strong>' . $customer->full_name . '</strong> cambiado exitosamente a <strong>' . ($newStatus ? 'Activo' : 'Inactivo') . '</strong>',
+                'success' => 'Cliente <strong>' . $person->full_name . '</strong> cambiado exitosamente a <strong>' . ($newStatus ? 'Activo' : 'Inactivo') . '</strong>',
                 'status' => $newStatus
             ]);
         } catch (\Throwable $th) {
             DB::rollBack();
             return response()->json([
-                'error' => 'Error al cambiar el estado del cliente <strong>' . $customer->full_name . '</strong>: ' . $th->getMessage()
+                'error' => 'Error al cambiar el estado del cliente <strong>' . $person->full_name . '</strong>: ' . $th->getMessage()
             ], 500);
         }
     }

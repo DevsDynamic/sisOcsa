@@ -143,13 +143,13 @@
                 }
             });
 
-            // Configuración del MODAL para CREAR nuevo cliente
+            // Configuración del MODAL para CREAR nuevo registro
             $('#modal-create').on('show.bs.modal', function (event) {
                 //Almacenar datos
-                var button = $(event.relatedTarget);                 
+                var button = $(event.relatedTarget);
                 var entity = "cliente";
                 var type = button.data('type'); // Obtener el valor de data-type
-                console.log('open modal create customer');
+                console.log('open modal create');
 
                 // Configurar el modal con los datos del cliente
                 var modal = $(this);
@@ -163,28 +163,28 @@
                     'border-bottom-right-radius': '.25rem'
                 });
 
-                selectTypePerson();
-                evaluateTypePerson();
+                selectTypePerson(modal);
+                evaluateTypePerson(modal);
             });
 
-            // Configuración del MODAL para VISUALIZAR cliente
+            // Configuración del MODAL para VISUALIZAR registro
             $('#modal-show').on('show.bs.modal', function (event) {
                 //Almacenar datos
                 var button = $(event.relatedTarget);                
-                var CustomerId = button.data('id');
+                var id = button.data('id');
                 var entity = "Cliente";                
-                console.log('open modal show customer');
+                console.log('open modal show');
 
                 // Configurar el modal con los datos del cliente
                 var modal = $(this);
-                var formattedId = 'CLI' + ('00000' + CustomerId).slice(-5);
+                var formattedId = 'CLI' + ('00000' + id).slice(-5);
                 modal.find('.texttitle').text((entity).toUpperCase()); // Cambiar .text() por .val() para input
                 modal.find('.entity').text(entity);
                 modal.find('.textcode').text(formattedId);
 
                 // Construir la URL para la solicitud AJAX utilizando el ID del cliente
                 var url = "{{ route('people.show', ':id') }}";
-                url = url.replace(':id', CustomerId);
+                url = url.replace(':id', id);
 
                 $.ajax({
                     url: url,
@@ -195,8 +195,19 @@
                         modal.find('#type_document').val(data.html.type_document);
                         modal.find('#document_number').val(data.html.document_number);
                         modal.find('#full_name').val(data.html.full_name);
-                        modal.find('#company').val(data.html.company);
-                        modal.find('#type_customer').val(data.html.type_customer);
+                        modal.find('#type_person').val(data.html.type_person);
+                        // Verificar y mostrar los campos al cargar la página si es contcato
+                        var contactFields = modal.find("#contactFields");
+                        if (data.html.type_person === "Contacto") {
+                            contactFields.show();
+                            modal.find('#email').val(data.html.email);
+                            modal.find('#birthdate').val(data.html.birthdate);
+                            modal.find('#address').val(data.html.address);
+                            modal.find('#phone_number').val(data.html.phone_number);
+                            modal.find('#token').val(data.html.token);
+                        } else {
+                            contactFields.hide(); // Asegurar que se oculte cuando no es contacto
+                        }
                     },
                     error: function(xhr, status, error) {
                         console.error('Error al obtener los datos del cliente:', error);
@@ -211,25 +222,27 @@
                 });
             });
 
-            // Configuración del MODAL para EDITAR tipo de cliente
+            // Configuración del MODAL para EDITAR registro
             $('#modal-edit').on('show.bs.modal', function (event) {
                 //Almacenar datos
                 var button = $(event.relatedTarget);                
-                var CustomerId = button.data('id');
-                var entity = "cliente";                
-                console.log('open modal edit customer');
+                var id = button.data('id');
+                var entity = "cliente";
+                var type = button.data('type'); // Obtener el valor de data-type
+                console.log('open modal edit');
 
                 // Configurar el modal con los datos del cliente
                 var modal = $(this);
-                modal.find('#hiddenIDCustomer').val(CustomerId);
-                var formattedId = 'CLI' + ('00000' + CustomerId).slice(-5);
+                modal.find('#hiddenIDCustomer').val(id);
+                var formattedId = 'CLI' + ('00000' + id).slice(-5);
                 modal.find('.texttitle').text((entity).toUpperCase()); // Cambiar .text() por .val() para input
                 modal.find('.entity').text(entity);
+                modal.find('#modalType').val(type); // Asignar el valor al campo oculto dentro del modal
                 modal.find('.textcode').text(formattedId);
 
                 // Construir la URL para la solicitud AJAX utilizando el ID del cliente
                 var url = "{{ route('people.edit', ':id') }}";
-                url = url.replace(':id', CustomerId);
+                url = url.replace(':id', id);
 
                 $.ajax({
                     url: url,
@@ -240,8 +253,21 @@
                         modal.find('#type_document').val(data.html.type_document_id).trigger('change');
                         modal.find('#document_number').val(data.html.document_number);
                         modal.find('#full_name').val(data.html.full_name);
-                        modal.find('#company').val(data.html.company_id).trigger('change');
-                        modal.find('#type_customer').val(data.html.type_customer_id).trigger('change');
+                        modal.find('#type_person').val(data.html.type_person_id).trigger('change');
+                        selectTypePerson(modal);  // Ejecutar la función en el modal de edición
+                        evaluateTypePerson(modal); // Evaluar si se deben mostrar los campos
+                        // Verificar y mostrar los campos al cargar la página si es contcato
+                        var contactFields = modal.find("#contactFields");
+                        if (data.html.type_person === "Contacto") {
+                            contactFields.show();
+                            modal.find('#email').val(data.html.email);
+                            modal.find('#birthdate').val(data.html.birthdate);
+                            modal.find('#address').val(data.html.address);
+                            modal.find('#phone_number').val(data.html.phone_number);
+                            modal.find('#token').val(data.html.token);
+                        } else {
+                            contactFields.hide(); // Asegurar que se oculte cuando no es contacto
+                        }
                     },
                     error: function(xhr, status, error) {
                         console.error('Error al obtener los datos del cliente:', error);
@@ -253,7 +279,9 @@
                             showConfirmButton: true
                         });
                     }
-                });                
+                }); 
+                
+                
             });
 
             // Configuración del modal de CAMBIO DE ESTADO de tipo de cliente (activar/inactivar)
@@ -380,7 +408,7 @@
                 }                
             });
 
-            // Función para EDITAR cliente // Manejar el formulario editar tipo de cliente
+            // Función para EDITAR cliente // Manejar el formulario editar registro
             $('#formEditCustomer').off('submit').on('submit', function (e) {
                     e.preventDefault();
                     console.log('clic button save edit customer');
@@ -403,19 +431,29 @@
                     data: formData,
                     processData: false,
                     contentType: false,
-                    success: function(data) {
-                        if (data.success) {
+                    success: function(data, textStatus, xhr) {
+                        if (xhr.status === 200) { // Verifica si el código de estado es 200
                             $('#modal-edit').modal('hide');
                             $('#tablaPrincipal').DataTable().ajax.reload(); // Actualiza la tabla si es necesario
                             console.log(data);
+
                             // Mostrar alerta de éxito
                             Swal.fire({
                                 position: 'center',
                                 icon: 'success',
                                 title: 'Éxito',
-                                html: data.success,
+                                html: data.message,
                                 showConfirmButton: false,
                                 timer: 2000
+                            });
+                        } else {
+                            // Si el código de estado no es 200, mostrar error
+                            Swal.fire({
+                                position: 'center',
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Ocurrió un error al agregar el registro. Inténtelo de nuevo.',
+                                showConfirmButton: true
                             });
                         }
                     },

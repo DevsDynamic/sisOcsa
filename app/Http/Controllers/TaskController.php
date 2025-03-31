@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Osinergmin;
 use App\Models\Person;
+use App\Services\TwilioService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
 use PhpParser\Node\Stmt\Return_;
+use GuzzleHttp\Exception\RequestException;
 
 class TaskController extends Controller
 {    
@@ -21,13 +23,13 @@ class TaskController extends Controller
                         ->get();
 
         $resu = []; // Inicializar arreglo para almacenar resultados
-        $fecha = Carbon::now()->format('Y-m-d\TH:i:s.ssz'); // FECHA ACTUAL
+        $fecha = Carbon::now()->addHours(5)->format('Y-m-d\TH:i:s.ssz'); // FECHA ACTUAL
         $parte1 = substr($fecha, 0, 20); // CONVERSION 1
         $parte2 = substr($fecha, 21, 3); // CONVERSION 2
 
         $Date = $parte1 . $parte2 . 'Z'; // ARMADO DE FECHA EN FORMATO PARA OSINERGMIN
 
-        $token_trama = 'EE089GA4-888A-4216-AC42-53683E236F18'; // TOKEN OSINERGMIN
+        $token_trama = 'AD57D9F3-9DE3-41C6-BA49-F95856B3138F'; // TOKEN OSINERGMIN
         // DEV: EE089GA4-888A-4216-AC42-53683E236F18
         // PROD: AD57D9F3-9DE3-41C6-BA49-F95856B3138F
 
@@ -144,7 +146,7 @@ class TaskController extends Controller
                     
                     // $estado = $response->getStatusCode(); // Obtener el estado de la respuesta                
                     // $resultado = $response->getBody()->getContents(); // Obtener el contenido de la respuesta
-                    
+                    //return $response->getBody();
                     $estado = $response->getStatusCode();
                     $resultado = json_decode($response->getBody()->getContents(), true);
                     //return $data_send;
@@ -165,6 +167,7 @@ class TaskController extends Controller
                         // Verificar si $resultado contiene la clave 'data'
                         if (isset($resultado['data'])) {
                             // Si es un batch (array con múltiples elementos)
+                            $date_osinergmin = $resultado['timestamp']; // Guardar la fecha recibida
                             if (is_array($resultado['data']) && isset($resultado['data'][$key])) {
                                 $response_data = $resultado['data'][$key]; // Toma el índice correspondiente
                             } else {
@@ -172,23 +175,35 @@ class TaskController extends Controller
                                 $response_data = $resultado['data'];
                             }
                         } else {
+                            $date_osinergmin = $resultado['timestamp'];
                             // Si no existe la clave 'data', se considera una unidad
                             $response_data = $resultado;
                         }
 
-                        // Verificar si se recibió correctamente el estado
-                        $status = $estado == 200 ? 'SUCCESS' : 'ERROR';
+                        // // Verificar si se recibió correctamente el estado
+                        // $status = $estado == 200 ? 'SUCCESS' : 'ERROR';
 
-                        // Establecer el mensaje de respuesta
-                        $response_message = $estado == 200 
-                            ? 'La trama se ha creado con éxito.' // En caso de éxito
-                            : ($response_data['message'] ?? 'Sin mensaje de error'); // En caso de error
+                        // // Establecer el mensaje de respuesta
+                        // $response_message = $estado == 200 
+                        //     ? 'La trama se ha creado con éxito.' // En caso de éxito
+                        //     : ($response_data['message'] ?? 'Sin mensaje de error'); // En caso de error
 
-                        // Establecer el mensaje de error
-                        $error_message = $estado == 200 
-                            ? '' // No hay mensaje de error si el estado es 200
-                            : ($response_data['message'] ?? 'Sin mensaje registrado del error'); // Mensaje de error si el estado no es 200
+                        // // Establecer el mensaje de error
+                        // $error_message = $estado == 200 
+                        //     ? '' // No hay mensaje de error si el estado es 200
+                        //     : ($response_data['message'] ?? 'Sin mensaje registrado del error'); // Mensaje de error si el estado no es 200
                             
+                        // Verificar si $response_data tiene 'status'
+                        $status = isset($response_data['status']) ? 
+                        ($response_data['status'] === 'CREATED' ? 'SUCCESS' : 'ERROR') 
+                        : 'ERROR';
+
+                        // Asignar el mensaje basado en la respuesta de OSINERGMIN
+                        $response_message = $response_data['message'] ?? 'Sin mensaje de respuesta';
+
+                        // Establecer el mensaje de error solo si el estado es 'ERROR'
+                        $error_message = ($status === 'ERROR') ? ($response_data['message'] ?? 'Sin mensaje registrado del error') : '';
+
                         // Obtener la sugerencia si está presente
                         $response_suggestion = $response_data['suggestion'] ?? null;
 
@@ -208,7 +223,7 @@ class TaskController extends Controller
                                 'longitude' => $unit['position']['longitude'],
                                 'gpsDate' => $unit['gpsDate'],
                                 'odometer' => $unit['odometer'],
-                                'response_timestamp' => now(),
+                                'response_timestamp' => $date_osinergmin,
                                 'response_message' => $response_message,
                                 'response_suggestion' => $response_suggestion,
                                 'response_status' => $status ?? null
@@ -238,63 +253,9 @@ class TaskController extends Controller
         //return $resu;
     }
 
-    public function sendAlertWhatsApp()
-    {
-
-    }
-
-    // public function checkAndSendAlerts()
-    // {
-    //     $clients_ocsa = Person::whereNotNull('token')
-    //                         ->where('token', '<>', '')
-    //                         ->where('status', '1')
-    //                         ->get();
-
-    //     foreach ($clients_ocsa as $client_ocsa) {
-    //         $whatsappPhoneNumber = '51' . $client_ocsa->phone_number;
-
-    //         $now = Carbon::now('UTC');
-    //         $from = $now->subMinutes(2)->format('Y-m-d\TH:i:s\Z');
-    //         $till = $now->format('Y-m-d\TH:i:s\Z');
-
-    //         $url = "https://monitoreo.ocsaperu.com/api/v1/alert/list.json";
-
-    //         $client = new Client();
-
-    //         try {
-    //             $response = $client->get($url, [
-    //                 'query' => [
-    //                     'key' => $client_ocsa->token,
-    //                     'from' => $from,
-    //                     'till' => $till,
-    //                     'limit' => 150,
-    //                     'include' => ['id', 'location', 'address', 'driver', 'name', 'surname']
-    //                 ]
-    //             ]);
-
-    //             $alerts = json_decode($response->getBody(), true);
-
-    //             if (!empty($alerts['data'])) {
-    //                 foreach ($alerts['data'] as $alert) {
-    //                     $message = "🚨 *Alerta detectada* 🚨\n";
-    //                     $message .= "📍 *Ubicación:* {$alert['address']}\n";
-    //                     $message .= "📅 *Fecha/Hora:* {$alert['time']}\n";
-    //                     $message .= "⚠ *Tipo:* {$alert['alert_type']}\n";
-    //                     $message .= "📌 *Mensaje:* {$alert['msg']}";
-
-    //                     $this->sendWhatsAppMessage($whatsappPhoneNumber, $message);
-    //                 }
-    //             } else {
-    //                 Log::info('No se encontraron alertas en los últimos 2 minutos.');
-    //             }
-    //         } catch (\Exception $e) {
-    //             Log::error('Error al consultar la API de OCSA: ' . $e->getMessage());
-    //         }
-    //     }
-    // }
-
     public function checkAndSendAlerts()
     {
+        $twilio = new TwilioService();
         $clients_ocsa = Person::whereNotNull('token')
                             ->where('token', '<>', '')
                             ->where('status', '1')
@@ -350,8 +311,11 @@ class TaskController extends Controller
                     ];
 
                     $message = substr($message, 0, 4096);
+                    //$message = preg_replace('/[\t\n\r]+/', ' ', $message); // Elimina tabs y saltos de línea
+                    //$message = preg_replace('/\s{4,}/', ' ', $message);   // Reemplaza más de 4 espacios por uno solo 
 
-                    $this->sendWhatsAppMessage($whatsappPhoneNumber, $message);
+                    //$this->sendWhatsAppMessage($whatsappPhoneNumber, $message);
+                    $twilio->sendWhatsAppMessage($whatsappPhoneNumber, $message);
                 } else {
                     Log::info("No se encontraron alertas en los últimos 2 minutos para {$client_ocsa->name}.");
                 }
@@ -367,31 +331,93 @@ class TaskController extends Controller
         ];
     }
 
-    public function sendWhatsAppMessage($phoneNumber, $message)
-    {
-        $client = new Client();
-        $apiUrl = 'https://graph.facebook.com/v18.0/535460832993968/messages';
-        $apiToken = 'EAAOi1JftaOkBOwYm7KH10rC4bbJxyXTBloZApSCFQjDMwLqswnF08Fx0q2j1tT9ZAdt7K2lOFkemQlyLuSTdbk6ZC6RTeZAUTNkZB8ZCDH6Im0gAyjR6SIVZBUZCZAcZAqTpZAo44A8nC7KHFdDYv75s3i6PbJm3YVZB8ZAz1zGJxPMq3JDjvTkZBcc3oZBJlSHO1EBcZBEeAR1zPZCQMwBKs7RXdf420vd5cGXQZD'; // Reemplaza con tu token de acceso de Meta
+    // META PLANTILLA BASICA
+    // public function sendWhatsAppMessage($phoneNumber, $message)
+    // {
+    //     $client = new Client();
+    //     $apiUrl = 'https://graph.facebook.com/v22.0/535460832993968/messages';
+    //     $apiToken = 'EAAOi1JftaOkBO1L3IXceoGc6grNrtHs8Rveh7qgSxC65tWQ3nZABEgkHckh3aGRHNrOKZBaqkmZBovZAxcSUZAsxFB2z7ZCVscXTg3yqjUsXZAGwgItD3zrxIOdjTLmPfelYSZBios5uRJHnsJkJP4iXRxJ6wZA7l3x7huOg0WPim6P0ZBMbIJajjpM4kovF19Sel0yTsrhWKG3i19u5Bk8tqUvTNZCdT0ZD'; // Reemplaza con tu token de acceso de Meta
+        
+    //     try {
+    //         // Mensaje usando plantilla (en tu caso 'hello_world')
+    //         $response = $client->post($apiUrl, [
+    //             'json' => [
+    //                 'messaging_product' => 'whatsapp',
+    //                 'to' => $phoneNumber,
+    //                 'type' => 'template',
+    //                 'template' => [
+    //                     'name' => 'hello_world', // Nombre de la plantilla
+    //                     'language' => [
+    //                         'code' => 'en_US', // Código de idioma
+    //                     ]
+    //                 ]
+    //             ],
+    //             'headers' => [
+    //                 'Authorization' => "Bearer $apiToken",
+    //                 'Content-Type' => 'application/json'
+    //             ]
+    //         ]);
 
-        try {
-            $response = $client->post($apiUrl, [
-                'json' => [
-                    'messaging_product' => 'whatsapp',
-                    'to' => $phoneNumber,
-                    'type' => 'text',
-                    'text' => ['body' => $message]
-                ],
-                'headers' => [
-                    'Authorization' => "Bearer $apiToken",
-                    'Content-Type' => 'application/json'
-                ]
-            ]);
+    //         Log::info('Mensaje de WhatsApp enviado con éxito.', ['response' => $response->getBody()]);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error al enviar mensaje de WhatsApp: ' . $e->getMessage());
+    //     }
+    // }
 
-            Log::info('Mensaje de WhatsApp enviado con éxito.', ['response' => $response->getBody()]);
-        } catch (\Exception $e) {
-            Log::error('Error al enviar mensaje de WhatsApp: ' . $e->getMessage());
-        }
-    }
+    // META CON PLANTILLA PERSONALIZADA
+    // public function sendWhatsAppMessage($phoneNumber, $message)
+    // {
+    //     $client = new Client();
+    //     $apiUrl = 'https://graph.facebook.com/v22.0/535460832993968/messages';
+    //     $apiToken = 'EAAOi1JftaOkBO1L3IXceoGc6grNrtHs8Rveh7qgSxC65tWQ3nZABEgkHckh3aGRHNrOKZBaqkmZBovZAxcSUZAsxFB2z7ZCVscXTg3yqjUsXZAGwgItD3zrxIOdjTLmPfelYSZBios5uRJHnsJkJP4iXRxJ6wZA7l3x7huOg0WPim6P0ZBMbIJajjpM4kovF19Sel0yTsrhWKG3i19u5Bk8tqUvTNZCdT0ZD'; // Reemplaza con tu token de acceso de Meta
+        
+    //     try {
+    //         // Mensaje usando plantilla (en tu caso 'hello_world')
+    //         $response = $client->post($apiUrl, [
+    //             'json' => [
+    //                 'messaging_product' => 'whatsapp',
+    //                 'to' => '51921502571',//$phoneNumber
+    //                 'type' => 'template',
+    //                 'template' => [
+    //                     'name' => 'alert_ocsa', // Nombre de la plantilla
+    //                     'language' => [
+    //                         'code' => 'es_PE', // Código de idioma
+    //                     ],
+    //                     'components' => [
+    //                         [
+    //                             'type' => 'header',
+    //                             'parameters' => [
+    //                                 [
+    //                                     'type' => 'image',
+    //                                     'image' => ['link' => 'https://ocsa.dmautomotriz.com/image/banner.jpg']
+    //                                 ]
+    //                             ]
+    //                         ],
+    //                         [
+    //                             'type' => 'body',
+    //                             'parameters' => [
+    //                                 [
+    //                                     'type' => 'text',
+    //                                     'text' => 'Prueba sin msg dinámico'//$message
+    //                                 ]
+    //                             ]
+    //                         ]
+    //                     ]
+    //                 ]
+    //             ],
+    //             'headers' => [
+    //                 'Authorization' => "Bearer $apiToken",
+    //                 'Content-Type' => 'application/json'
+    //             ]
+    //         ]);
+
+    //         Log::info('Mensaje de WhatsApp enviado con éxito.', ['response' => $response->getBody()]);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error al enviar mensaje de WhatsApp: ' . $e->getMessage());
+    //     }
+    // }
+
+
 
     public function index()
     {

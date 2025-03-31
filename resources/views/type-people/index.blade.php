@@ -320,8 +320,8 @@
                     headers: {
                         'X-HTTP-Method-Override': 'PUT' // Esto indica que el método debe ser tratado como PUT
                     },
-                    success: function(data) {
-                        if (data.success) {
+                    success: function(data, textStatus, xhr) {
+                        if (xhr.status === 200) { // Verifica si el código de estado es 200
                             $('#modal-edit').modal('hide');
                             $('#tablaPrincipal').DataTable().ajax.reload(); // Actualiza la tabla si es necesario
                             console.log(data);
@@ -331,24 +331,34 @@
                                 position: 'center',
                                 icon: 'success',
                                 title: 'Éxito',
-                                html: data.success,
+                                html: data.message,
                                 showConfirmButton: false,
                                 timer: 2000
                             });
-                        }
-                    },
-                    error: function(xhr) {
-                        if (xhr.status === 422) { // Error de validación
-                            var errors = xhr.responseJSON.errors;
-                            showFormErrorsEdit(errors);
                         } else {
-                            var errorMessage = xhr.status + ': ' + xhr.statusText;
-                            // Mostrar alerta de error general
+                            // Si el código de estado no es 200, mostrar error
                             Swal.fire({
                                 position: 'center',
                                 icon: 'error',
                                 title: 'Error',
-                                text: 'Ocurrió un error al editar el tipo de cliente: ' + errorMessage + '. Inténtelo de nuevo.',
+                                text: 'Ocurrió un error al agregar el registro. Inténtelo de nuevo.',
+                                showConfirmButton: true
+                            });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // Si el código de estado es 422, mostrar los errores de validación
+                        if (xhr.status === 422) {
+                            var errors = xhr.responseJSON.errors;
+                            showFormErrorsEdit(errors);
+                        } else {
+                            // En caso de error 500, mostrar el mensaje de error general
+                            var errorMessage = xhr.status + ': ' + xhr.statusText;
+                            Swal.fire({
+                                position: 'center',
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Ocurrió un error al agregar el registro: ' + errorMessage + '. Inténtelo de nuevo.',
                                 showConfirmButton: true
                             });
                             console.log(errorMessage);

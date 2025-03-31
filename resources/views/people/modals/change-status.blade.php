@@ -2,7 +2,7 @@
 <div class="modal fade" id="modal-change-status" tabindex="-1" role="dialog" aria-labelledby="modalChangeStatusLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header ' . $customer->status == 1 ? 'btn-danger' : 'btn-success' . '">
+            <div class="modal-header">
                 <h5 class="modal-title texttitle" id="modalChangeStatusLabel"><span class="texttitle"></span></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -14,7 +14,7 @@
             <div class="modal-footer">
                 <form id="formChangeStatus" method="POST">
                     @csrf
-                    <input type="hidden" id="hiddenIDchangeStatus" name="customer_id">
+                    <input type="hidden" id="hiddenIDchangeStatus" name="register_id">
                     <input type="hidden" id="hiddenStatusAction" name="status_action">
                     <button type="submit" class="btn btn-primary btn-confirm-status">
                         <i class="icon-status"></i> Confirmar

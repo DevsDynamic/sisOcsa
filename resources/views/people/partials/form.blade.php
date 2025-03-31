@@ -59,7 +59,7 @@
                     <!-- email  -->
                     <div class="form-group col-lg-6 email">
                         <label for="email">Correo Electrónico<span style="color: red">*</span></label>
-                        <input type="email" id="email" name="email" class="form-control @error('email') is-invalid @enderror" placeholder="Ingrese correo electrónico" value="{{ old('email', $user->email ?? '') }}" required>
+                        <input type="email" id="email" name="email" class="form-control @error('email') is-invalid @enderror" placeholder="Ingrese correo electrónico" value="{{ old('email', $user->email ?? '') }}">
                         @error('email')
                             <small class="text-danger">{{ $message }}</small>
                         @enderror
@@ -88,9 +88,8 @@
                             <small class="text-danger">{{ $message }}</small>
                         @enderror
                     </div>
-
                     <!-- Token (Alfanumérico) -->
-                    <div class="form-group col-lg-6">
+                    <div class="form-group col-lg-12">
                         <label for="token">Token</label>
                         <input type="text" id="token" name="token" class="form-control @error('token') is-invalid @enderror" placeholder="Ingrese el token" value="{{ old('token', $user->token ?? '') }}"> {{-- pattern="[A-Za-z0-9]+" --}}
                         @error('token')

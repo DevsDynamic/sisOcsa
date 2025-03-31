@@ -178,16 +178,66 @@ $(document).ready(function() {
     });
 });
 
-// Función para seleccionar tipo de persona
-function selectTypePerson() {
-    var typeValue = $('input[name="type"]').val(); // Obtener el valor del campo 'type'
-    var selectTypePerson = $('#type_person'); // Seleccionar el dropdown de "Tipo de Persona"
+// // Función para seleccionar tipo de persona
+// function selectTypePerson() {
+//     var typeValue = $('input[name="type"]').val(); // Obtener el valor del campo 'type'
+//     var selectTypePerson = $('#type_person'); // Seleccionar el dropdown de "Tipo de Persona"
     
+//     // Primero, habilitar todas las opciones por defecto
+//     selectTypePerson.find('option').prop('disabled', false);
+
+//     // Remover cualquier input hidden previo que pueda existir
+//     $('input[name="type_person_hidden"]').remove();
+
+//     // Función para bloquear la selección y agregar un campo oculto
+//     function setAndLockSelection(value) {
+//         selectTypePerson.val(value).prop('disabled', true);
+//         $('<input>').attr({
+//             type: 'hidden',
+//             name: 'type_person',
+//             value: value
+//         }).appendTo(selectTypePerson.parent()); // Agrega el campo oculto
+//     }
+
+//     // Escenario 1: Si 'type' es "co", seleccionar "contacto" y deshabilitarlo.
+//     if (typeValue === 'co') {
+//         setAndLockSelection(1);
+//     }
+//     // Escenario 2: Si 'type' es "cp", seleccionar "cliente potencial" (value 2) y deshabilitarlo
+//     else if (typeValue === 'cp') {
+//         setAndLockSelection(2);
+//     }
+//     // Escenario 3: Si es otro 'type', mostrar todas las opciones y no hacer nada
+//     else {
+//         selectTypePerson.prop('disabled', false); // Habilitar todas las opciones
+//     }
+
+//     // Hacer que el select se actualice si es necesario
+//     selectTypePerson.trigger('change');
+
+//     console.log("Type person: " . typeValue);
+// }
+
+// function evaluateTypePerson() {
+//     var typeValue = $('input[name="type"]').val(); // Obtener el valor del campo 'type'
+//     var selectTypePerson = $('#type_person'); // Seleccionar el dropdown de "Tipo de Persona"
+
+//     // Verificar y mostrar los campos al cargar la página si es contcato
+//     if (selectTypePerson.val() == "1") {
+//         $("#contactFields").show();
+//     }
+// }
+
+// Función para seleccionar tipo de persona (Se ejecuta en ambos modales)
+function selectTypePerson(modal) {
+    var typeValue = modal.find('input[name="type"]').val(); // Obtener el valor del campo 'type'
+    var selectTypePerson = modal.find('#type_person'); // Seleccionar el dropdown de "Tipo de Persona"
+
     // Primero, habilitar todas las opciones por defecto
     selectTypePerson.find('option').prop('disabled', false);
 
     // Remover cualquier input hidden previo que pueda existir
-    $('input[name="type_person_hidden"]').remove();
+    modal.find('input[name="type_person_hidden"]').remove();
 
     // Función para bloquear la selección y agregar un campo oculto
     function setAndLockSelection(value) {
@@ -216,15 +266,37 @@ function selectTypePerson() {
     selectTypePerson.trigger('change');
 }
 
-function evaluateTypePerson() {
-    var typeValue = $('input[name="type"]').val(); // Obtener el valor del campo 'type'
-    var selectTypePerson = $('#type_person'); // Seleccionar el dropdown de "Tipo de Persona"
+// Función para evaluar el tipo de persona y mostrar campos de contacto
+function evaluateTypePerson(modal) {
+    var selectTypePerson = modal.find('#type_person'); // Seleccionar el dropdown de "Tipo de Persona"
+    var contactFields = modal.find("#contactFields"); // Campos ocultos de contacto
 
-    // Verificar y mostrar los campos al cargar la página si es obrero
+    // Mostrar los campos ocultos solo si es "Contacto" (value 1)
     if (selectTypePerson.val() == "1") {
-        $("#contactFields").show();
+        contactFields.show();
+    } else {
+        contactFields.hide();
     }
 }
+
+// document.addEventListener("DOMContentLoaded", function() {
+//     let typePersonSelect = document.getElementById("type_person");
+//     let contactFields = document.getElementById("contactFields");
+//     let emailField = document.getElementById("email");
+
+//     typePersonSelect.addEventListener("change", function() {
+//         if (this.value === "1") { // Ajusta según el ID real de CO
+//             contactFields.style.display = "block";
+//             emailField.setAttribute("required", "required");
+//         } else {
+//             contactFields.style.display = "none";
+//             emailField.removeAttribute("required");
+//         }
+//     });
+
+//     // Disparar evento al cargar la página (para manejar valores preseleccionados)
+//     typePersonSelect.dispatchEvent(new Event("change"));
+// });
 
 // Función para mostrar los errores de validación de los formularios
 function showFormErrors(form, errors) {

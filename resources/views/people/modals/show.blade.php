@@ -31,15 +31,41 @@
                                 <label for="full_name">Nombre completo</label>
                                 <input id="full_name" type="text" name="full_name" class="form-control" disabled>                               
                             </div>
-                            <!-- Empresa -->
-                            <div class="form-group col-lg-6">
-                                <label for="company">Empresa</label>
-                                <input id="company" type="text" name="company" class="form-control" disabled>                               
-                            </div>
                             <!-- Tipo de Cliente -->
                             <div class="form-group col-lg-6">
-                                <label for="type_customer">Tipo de cliente</label>
-                                <input id="type_customer" type="text" name="type_customer" class="form-control" disabled>                               
+                                <label for="type_person">Tipo de cliente</label>
+                                <input id="type_person" type="text" name="type_person" class="form-control" disabled>                               
+                            </div>
+
+                            <!-- Sección de campos adicionales para contactos (solo si es contacto) -->
+                            <div id="contactFields" style="display: none;" class="form-group col-lg-12">
+                                <div class="row">
+                                    <!-- email  -->
+                                    <div class="form-group col-lg-6">
+                                        <label for="email">Correo Electrónico</label>
+                                        <input id="email" type="text" name="email" class="form-control" disabled>                               
+                                    </div>
+                                    <!-- Fecha de Nacimiento -->
+                                    <div class="form-group col-lg-6">
+                                        <label for="birthdate">Fecha de Nacimiento</label>
+                                        <input id="birthdate" type="text" name="birthdate" class="form-control" disabled>                               
+                                    </div>
+                                    <!-- Dirección -->
+                                    <div class="form-group col-lg-6">
+                                        <label for="address">Dirección</label>
+                                        <input id="address" type="text" name="address" class="form-control" disabled>                               
+                                    </div>
+                                    <!-- Teléfono -->
+                                    <div class="form-group col-lg-6">
+                                        <label for="phone_number">Teléfono</label>
+                                        <input id="phone_number" type="text" name="phone_number" class="form-control" disabled>                               
+                                    </div>
+                                    <!-- Token (Alfanumérico) -->
+                                    <div class="form-group col-lg-12">
+                                        <label for="token">Token</label>
+                                        <input id="token" type="text" name="token" class="form-control" disabled>                               
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -17,6 +17,7 @@ use App\Http\Controllers\PersonController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TypeCustomerController;
 use App\Http\Controllers\TypePersonController;
+use App\Http\Controllers\WhatsAppController;
 
     Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('login', [LoginController::class, 'login']);
@@ -89,4 +90,6 @@ Route::middleware([
     // Pruebas de carga y lectura de imágenes
     Route::get('/upload', [ImageController::class, 'showUploadForm'])->name('image.form');
     Route::post('/upload', [ImageController::class, 'uploadImage'])->name('image.upload');
+
+    Route::post('/send-whatsapp', [WhatsAppController::class, 'sendMessage']);
 });

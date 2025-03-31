@@ -18,6 +18,7 @@
         "spatie/laravel-html": "^3.9",
         "spatie/laravel-permission": "^6.9",
         "thiagoalessio/tesseract_ocr": "^2.13",
+        "twilio/sdk": "^8.4",
         "yajra/laravel-datatables-oracle": "11"
     },
     "require-dev": {

@@ -3,6 +3,7 @@
 use App\Http\Controllers\TaskController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Services\TwilioService;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -18,4 +19,17 @@ Route::get('/test-whatsapp', function () {
     (new App\Http\Controllers\TaskController())->sendWhatsAppMessage($phone, $message);
 
     return 'Mensaje de prueba enviado.';
+});
+
+Route::get('/test-twilio', function () {
+    $twilio = new TwilioService();
+    $phone = '+51917235061'; // Reemplaza con tu número de prueba
+    $message = 'Hola, este es un mensaje de prueba desde Laravel con Twilio WhatsApp API.';
+
+    try {
+        $twilio->sendWhatsAppMessage($phone, $message);
+        return 'Mensaje enviado correctamente a ' . $phone;
+    } catch (\Exception $e) {
+        return 'Error: ' . $e->getMessage();
+    }
 });
