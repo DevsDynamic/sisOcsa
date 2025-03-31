@@ -116,37 +116,6 @@
         </div>
         </div>
     </div>
-    {{-- INDICADORES --}}
-    {{-- <h3>PORCENTAJE INDICADOR 1</h3>
-    <div id="indicador1-PRE-TEST" style="width: 100%; height: 500px;"></div>
-    <div id="piechart" style="width: 900px; height: 500px;"></div> --}}
-    {{-- <div id="indicador1-PRE-POST" style="width: 100%; height: 500px;"></div> --}}
-    {{-- <div id="indicador1-resultado" style="width: 100%; height: 500px;"></div> --}}
-    
-    {{--<div id="indicador2-PRE-TEST" style="width: 100%; height: 500px;"></div>
-    <div id="indicador2-POST-TEST" style="width: 100%; height: 500px;"></div>     --}}
-
-    {{-- <div class="col-lg-12">
-      <h3>LISTA</h3>
-      <div class="card">
-        <div class="card-body">
-          <table id="tabla" class="table table-striped">
-            <thead>
-              <tr>
-                <th scope="col">OS</th>
-                <th scope="col">CLIENTE</th>
-                <th scope="col">XXX</th>
-                <th scope="col">YYY</th>
-                <th scope="col">FECHA DE EMISION</th>
-                <th scope="col">FECHA DE VENCIMIENTO</th>
-              </tr>
-            </thead>
-            <tbody>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div> --}}
   </div>
   {{-- @include('orden_servicio.modal.alerta') --}}
   <br>
