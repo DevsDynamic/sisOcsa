@@ -255,7 +255,7 @@ class TaskController extends Controller
 
     public function checkAndSendAlerts()
     {
-        $twilio = new TwilioService();
+        //$twilio = new TwilioService();
         $clients_ocsa = Person::whereNotNull('token')
                             ->where('token', '<>', '')
                             ->where('status', '1')
@@ -282,7 +282,7 @@ class TaskController extends Controller
                         'key' => $client_ocsa->token,
                         'from' => $from,
                         'till' => $till,
-                        'limit' => 2,//150
+                        'limit' => 1,
                         'include' => ['id', 'location', 'address', 'driver', 'name', 'surname']
                     ]
                 ]);
@@ -290,16 +290,29 @@ class TaskController extends Controller
                 $alerts = json_decode($response->getBody(), true);
 
                 if (!empty($alerts['data'])) {
-                    $message = "🚨 *Resumen de Alertas* 🚨\n\n";
                     $clientAlerts = 0;
 
                     foreach ($alerts['data'] as $alert) {
-                        $message .= "📍 *Ubicación:* {$alert['address']}\n";
-                        $message .= "📅 *Fecha/Hora:* {$alert['time']}\n";
-                        $message .= "⚠ *Tipo:* {$alert['alert_type']}\n";
-                        $message .= "📌 *Mensaje:* {$alert['msg']}\n";
-                        $message .= "----------------------------\n";
+                        $message = "🚨 *Alerta Detectada* 🚨\n  ";
+                        $message .= "📍 *Ubicación:* {$alert['address']}\n  ";
+                        $message .= "📅 *Fecha/Hora:* {$alert['time']}\n  ";
+                        $message .= "⚠ *Tipo:* {$alert['alert_type']}\n  ";
+                        $message .= "📌 *Mensaje:* {$alert['msg']}\n  ";
+                        
+                        // construir link
+                        $location = $alert['location'];
+                        $mapsLink = "https://www.google.com/maps?q={$location}";
+    
+                        $message .= "🌍 *Ver en Maps:* {$mapsLink}\n";
 
+                        // Asegurar que el mensaje no supere 4096 caracteres
+                        $message = substr($message, 0, 4096);
+                        $message = preg_replace('/[\t\n\r]+/', ' ', $message); // Elimina tabs y saltos de línea
+                        $message = preg_replace('/\s{4,}/', ' ', $message);   // Reemplaza más de 4 espacios por uno solo 
+                        
+                        // Enviar el mensaje por cada alerta
+                        $this->sendWhatsAppMessage($whatsappPhoneNumber, $message);
+    
                         $clientAlerts++;
                         $totalAlerts++;
                     }
@@ -309,25 +322,18 @@ class TaskController extends Controller
                         'telefono' => $whatsappPhoneNumber,
                         'alertas' => $clientAlerts,
                     ];
-
-                    $message = substr($message, 0, 4096);
-                    //$message = preg_replace('/[\t\n\r]+/', ' ', $message); // Elimina tabs y saltos de línea
-                    //$message = preg_replace('/\s{4,}/', ' ', $message);   // Reemplaza más de 4 espacios por uno solo 
-
-                    //$this->sendWhatsAppMessage($whatsappPhoneNumber, $message);
-                    $twilio->sendWhatsAppMessage($whatsappPhoneNumber, $message);
                 } else {
-                    Log::info("No se encontraron alertas en los últimos 2 minutos para {$client_ocsa->name}.");
+                    Log::info("No se encontraron alertas para {$client_ocsa->full_name}.");
                 }
             } catch (\Exception $e) {
-                Log::error("Error al consultar la API de OCSA para {$client_ocsa->name}: " . $e->getMessage());
+                Log::error("Error al consultar la API de OCSA para {$client_ocsa->full_name}: " . $e->getMessage());
             }
         }
 
         // Retornar el resumen de alertas
         return [
             'total_alertas' => $totalAlerts,
-            'detalle_alertas' => $alertsSummary ?: 'No se encontraron alertas en los últimos 2 minutos.',
+            'detalle_alertas' => $alertsSummary ?: 'No se encontraron alertas.',
         ];
     }
 
@@ -336,7 +342,7 @@ class TaskController extends Controller
     // {
     //     $client = new Client();
     //     $apiUrl = 'https://graph.facebook.com/v22.0/535460832993968/messages';
-    //     $apiToken = 'EAAOi1JftaOkBO1L3IXceoGc6grNrtHs8Rveh7qgSxC65tWQ3nZABEgkHckh3aGRHNrOKZBaqkmZBovZAxcSUZAsxFB2z7ZCVscXTg3yqjUsXZAGwgItD3zrxIOdjTLmPfelYSZBios5uRJHnsJkJP4iXRxJ6wZA7l3x7huOg0WPim6P0ZBMbIJajjpM4kovF19Sel0yTsrhWKG3i19u5Bk8tqUvTNZCdT0ZD'; // Reemplaza con tu token de acceso de Meta
+    //     $apiToken = 'EAAOi1JftaOkBOwvFQkIvlKwNtnaBqGhcNBpL2wOd7MH7hGNlRr3PjMK3NbEaoZC5VAbes0gHoRrxk5RuvFSMt8lrbqMq5Swc4KbH2UAE5SZBNEtGLp9qMu8i8UEz602PzrDgdZCJVsX8LWW1g3ZA3AyKtHHLkqNsRyHGHmupcwZBKHrKt4pWjPj2qSwqLOKHNwFh6BhKGix2LeLsp7MZC3oSNSUWxW'; // Reemplaza con tu token de acceso de Meta
         
     //     try {
     //         // Mensaje usando plantilla (en tu caso 'hello_world')
@@ -369,14 +375,14 @@ class TaskController extends Controller
     // {
     //     $client = new Client();
     //     $apiUrl = 'https://graph.facebook.com/v22.0/535460832993968/messages';
-    //     $apiToken = 'EAAOi1JftaOkBO1L3IXceoGc6grNrtHs8Rveh7qgSxC65tWQ3nZABEgkHckh3aGRHNrOKZBaqkmZBovZAxcSUZAsxFB2z7ZCVscXTg3yqjUsXZAGwgItD3zrxIOdjTLmPfelYSZBios5uRJHnsJkJP4iXRxJ6wZA7l3x7huOg0WPim6P0ZBMbIJajjpM4kovF19Sel0yTsrhWKG3i19u5Bk8tqUvTNZCdT0ZD'; // Reemplaza con tu token de acceso de Meta
+    //     $apiToken = 'EAAOi1JftaOkBOwvFQkIvlKwNtnaBqGhcNBpL2wOd7MH7hGNlRr3PjMK3NbEaoZC5VAbes0gHoRrxk5RuvFSMt8lrbqMq5Swc4KbH2UAE5SZBNEtGLp9qMu8i8UEz602PzrDgdZCJVsX8LWW1g3ZA3AyKtHHLkqNsRyHGHmupcwZBKHrKt4pWjPj2qSwqLOKHNwFh6BhKGix2LeLsp7MZC3oSNSUWxW'; // Reemplaza con tu token de acceso de Meta
         
     //     try {
     //         // Mensaje usando plantilla (en tu caso 'hello_world')
     //         $response = $client->post($apiUrl, [
     //             'json' => [
     //                 'messaging_product' => 'whatsapp',
-    //                 'to' => '51921502571',//$phoneNumber
+    //                 'to' => $phoneNumber,//'51921502571',
     //                 'type' => 'template',
     //                 'template' => [
     //                     'name' => 'alert_ocsa', // Nombre de la plantilla
@@ -398,7 +404,7 @@ class TaskController extends Controller
     //                             'parameters' => [
     //                                 [
     //                                     'type' => 'text',
-    //                                     'text' => 'Prueba sin msg dinámico'//$message
+    //                                     'text' => $message//'Prueba sin msg dinámico',
     //                                 ]
     //                             ]
     //                         ]
@@ -417,7 +423,151 @@ class TaskController extends Controller
     //     }
     // }
 
+    // PLANTILLA SIN IMAGEN DE CABECERA
+    public function sendWhatsAppMessage($phoneNumber, $message)
+    {
+        $client = new Client();
+        $apiUrl = 'https://graph.facebook.com/v22.0/535460832993968/messages';
+        $apiToken = 'EAAOi1JftaOkBOwvFQkIvlKwNtnaBqGhcNBpL2wOd7MH7hGNlRr3PjMK3NbEaoZC5VAbes0gHoRrxk5RuvFSMt8lrbqMq5Swc4KbH2UAE5SZBNEtGLp9qMu8i8UEz602PzrDgdZCJVsX8LWW1g3ZA3AyKtHHLkqNsRyHGHmupcwZBKHrKt4pWjPj2qSwqLOKHNwFh6BhKGix2LeLsp7MZC3oSNSUWxW'; // Reemplaza con tu token de acceso de Meta
+        
+        try {
+            // Mensaje usando plantilla (en tu caso 'hello_world')
+            $response = $client->post($apiUrl, [
+                'json' => [
+                    'messaging_product' => 'whatsapp',
+                    'to' => $phoneNumber,//'51921502571',
+                    'type' => 'template',
+                    'template' => [
+                        'name' => 'alertas', // Nombre de la plantilla
+                        'language' => [
+                            'code' => 'es_PE', // Código de idioma
+                        ],
+                        'components' => [
+                            [
+                                'type' => 'header',
+                                'parameters' => [
+                                    [
+                                        'type' => 'image',
+                                        'image' => ['link' => 'https://ocsa.dmautomotriz.com/image/banner.jpg']
+                                    ]
+                                ]
+                            ],
+                            [
+                                'type' => 'body',
+                                'parameters' => [
+                                    [
+                                        'type' => 'text',
+                                        'text' => $message//'Prueba sin msg dinámico',
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                'headers' => [
+                    'Authorization' => "Bearer $apiToken",
+                    'Content-Type' => 'application/json'
+                ]
+            ]);
 
+            Log::info('Mensaje de WhatsApp enviado con éxito.', ['response' => $response->getBody()]);
+        } catch (\Exception $e) {
+            Log::error('Error al enviar mensaje de WhatsApp: ' . $e->getMessage());
+        }
+    }
+
+    //VALIDAR QUE ESTÁ RETRANSMITIENDO
+    public function checkUnitsStatus()
+    {
+        $clients = Person::whereNotNull('token')
+                        ->where('token', '<>', '')
+                        ->where('status', '1')
+                        ->get();
+
+        if ($clients->isEmpty()) {
+            Log::info('No hay clientes activos con tokens.');
+            return;
+        }
+
+        $clientHttp = new Client();
+        $now = Carbon::now();
+        $from = $now->subMinutes(20);
+
+        // Variables para el resumen final
+        $totalUnitsChecked = 0;
+        $totalErrorsDetected = 0;
+        $totalAlertsSent = 0;
+        $summary = [];
+
+        foreach ($clients as $client) {
+            $client_api = $client->token;
+            $url_units = "https://monitoreo.ocsaperu.com/api/v1/unit/list.json?key=$client_api";
+
+            try {
+                $response_units = $clientHttp->get($url_units);
+                $response_data = json_decode($response_units->getBody(), true);
+
+                if (!isset($response_data['data']['units']) || empty($response_data['data']['units'])) {
+                    Log::info("No se encontraron unidades para el cliente {$client->full_name}.");
+                    continue;
+                }
+
+                foreach ($response_data['data']['units'] as $unit) {
+                    $unit_id = $unit['unit_id'] ?? null;
+                    $plate = $unit['number'] ?? 'Desconocido';
+
+                    // Buscar registros en la tabla osinergmins de los últimos 20 minutos
+                    $errorRecords = Osinergmin::where('uuid', $unit_id)
+                        ->where('created_at', '>=', $from)
+                        ->where('response_status', 'ERROR')
+                        ->count();
+
+                    $successRecords = Osinergmin::where('uuid', $unit_id)
+                        ->where('created_at', '>=', $from)
+                        ->where('response_status', 'SUCCESS')
+                        ->count();
+
+                    $totalUnitsChecked++;
+
+                    // Si hay errores y no hay éxitos, enviar alerta
+                    if ($errorRecords > 0 && $successRecords === 0) {
+                        $totalErrorsDetected++;
+
+                        $message = "⚠ *Alerta de Unidad*  ";
+                        $message .= "🚗 *Placa:* $plate  ";
+                        $message .= "❌ *Estado:* Dejó de retransmitir a OSINERGMIN en los últimos 20 minutos  ";
+                        //$message .= "📍 *Última ubicación:* https://www.google.com/maps?q={$unit['latitude']},{$unit['longitude']}\n";
+                        $message .= "🕒 *Último intento:* " . Carbon::parse($unit['last_update'])->format('Y-m-d H:i:s');
+
+                        $this->sendWhatsAppMessage("51" . $client->phone_number, $message);
+                        Log::info("Mensaje de alerta enviado para la unidad $plate del cliente {$client->full_name}.");
+                        $totalAlertsSent++;
+
+                        // Agregar al resumen
+                        $summary[] = [
+                            'cliente' => $client->full_name,
+                            'unidad' => $plate,
+                            'errores_detectados' => $errorRecords,
+                            'ultimo_registro' => Carbon::parse($unit['last_update'])->format('Y-m-d H:i:s')
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error("Error al consultar la API de unidades para {$client->full_name}: " . $e->getMessage());
+            }
+        }
+
+        // Resumen final
+        $result = [
+            'total_unidades_verificadas' => $totalUnitsChecked,
+            'total_unidades_con_errores' => $totalErrorsDetected,
+            'total_alertas_enviadas' => $totalAlertsSent,
+            'detalles' => $summary
+        ];
+
+        Log::info("Resumen del proceso:", $result);
+        return response()->json($result, 200);
+    }
 
     public function index()
     {

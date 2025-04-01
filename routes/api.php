@@ -12,6 +12,7 @@ Route::get('/user', function (Request $request) {
 Route::apiResource('/task', TaskController::class);
 Route::get('/send-data-osinergmin', [TaskController::class, 'sendDataOsinergmin'])->name('osinergmins.send-data');
 Route::get('/send-alert-wsp', [TaskController::class, 'checkAndSendAlerts'])->name('osinergmins.send-alert');
+Route::get('/send-alert-osinergmin', [TaskController::class, 'checkUnitsStatus'])->name('osinergmins.send-alert-osinergmin');
 Route::get('/test-whatsapp', function () {
     $phone = '51921502571'; // Reemplaza con tu número de WhatsApp
     $message = '¡Hola! Este es un mensaje de prueba desde mi aplicación Laravel.';
@@ -23,7 +24,7 @@ Route::get('/test-whatsapp', function () {
 
 Route::get('/test-twilio', function () {
     $twilio = new TwilioService();
-    $phone = '+51917235061'; // Reemplaza con tu número de prueba
+    $phone = '+51900712841'; // Reemplaza con tu número de prueba
     $message = 'Hola, este es un mensaje de prueba desde Laravel con Twilio WhatsApp API.';
 
     try {

@@ -89,7 +89,7 @@
             </div>
             <div class="col-md-9">
                 <div class="header">
-                    <img src="/images/banner_ocsa.jpg" alt="banner ocsa" class="img-fluid rounded">
+                    <img src="https://ocsa.dmautomotriz.com/image/banner.jpg" alt="banner ocsa" class="img-fluid rounded">
                 </div>
             </div>
         </div>

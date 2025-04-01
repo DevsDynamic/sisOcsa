@@ -296,7 +296,7 @@ class OsinergminController extends Controller
 
         // Buscar la unidad por su uuid y filtrar por el último mes
         $unit_osinergmin = Osinergmin::where('uuid', '=', $id)
-            ->whereBetween('response_timestamp', [$fechaInicio, $fechaFin])
+            ->whereBetween('created_at', [$fechaInicio, $fechaFin])
             ->orderBy('id', 'DESC')
             ->get();
 
