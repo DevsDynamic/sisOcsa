@@ -111,7 +111,7 @@ class TaskController extends Controller
                                         'longitude' => $value['lng'],
                                         'altitude' => "169"
                                     ],
-                                    'gpsDate' => $Date,
+                                    'gpsDate' => now(),
                                     'tokenTrama' => $token_trama,
                                     'odometer' => intval($value['mileage'] / 1000),
                                     'uuid' => $value['unit_id'],
