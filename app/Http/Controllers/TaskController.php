@@ -111,7 +111,7 @@ class TaskController extends Controller
                                         'longitude' => $value['lng'],
                                         'altitude' => "169"
                                     ],
-                                    'gpsDate' => now(),
+                                    'gpsDate' => $Date,
                                     'tokenTrama' => $token_trama,
                                     'odometer' => intval($value['mileage'] / 1000),
                                     'uuid' => $value['unit_id'],
@@ -221,7 +221,7 @@ class TaskController extends Controller
                                 'speed' => $unit['speed'],
                                 'latitude' => $unit['position']['latitude'],
                                 'longitude' => $unit['position']['longitude'],
-                                'gpsDate' => $unit['gpsDate'],
+                                'gpsDate' => now(),
                                 'odometer' => $unit['odometer'],
                                 'response_timestamp' => $date_osinergmin,
                                 'response_message' => $response_message,
