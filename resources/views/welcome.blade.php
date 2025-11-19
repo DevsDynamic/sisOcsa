@@ -153,8 +153,9 @@
 
     <script language="JavaScript">
         function redireccionar() {
-            setTimeout("location.href='http://sisocsa.com/api/send-data-osinergmin'", 120000); // Cambiar la URL según sea necesario
+            setTimeout("location.href='http://ocsa.dmautomotriz.com/api/send-data-osinergmin'", 120000); // Cambiar la URL según sea necesario
             //http://127.0.0.1:8000/api/task
+            //http://sisocsa.com/api/send-data-osinergmin
         }
     </script>
 </body>
