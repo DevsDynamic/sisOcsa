@@ -3,7 +3,7 @@
 @section('title', 'Reportes')
 
 @section('content_header')
-    <div class="card mb-0"> 
+    <div class="card mb-0">
         <div class="card-header">
             <h1><i>REPORTE</i> - <b>RETRANSMISIONES OSINERGMIN</b></h1>
         </div>
@@ -17,10 +17,11 @@
                 <div class="row">
                     <div class="form-group col-lg-3">
                         <label for="unit">Placa</label>
-                        <select id="unit" name="unit" class="form-control selectpicker @error('unit') is-invalid @enderror" 
-                            style="width: 100%" data-live-search="true">
+                        <select id="unit" name="unit"
+                            class="form-control selectpicker @error('unit') is-invalid @enderror" style="width: 100%"
+                            data-live-search="true">
                             <option value="">---- TODOS ----</option>
-                            @foreach($unitOptions as $unit)
+                            @foreach ($unitOptions as $unit)
                                 <option value="{{ $unit['id'] }}">{{ $unit['plate'] }}</option>
                             @endforeach
                         </select>
@@ -112,41 +113,103 @@
                     emptyTable: "No hay información",
                     info: "Mostrando del _START_ al _END_ de _TOTAL_ Registros",
                     search: "Buscar:",
-                    paginate: { first: "Primero", last: "Último", next: "Siguiente", previous: "Anterior" },
+                    paginate: {
+                        first: "Primero",
+                        last: "Último",
+                        next: "Siguiente",
+                        previous: "Anterior"
+                    },
                     "lengthMenu": "Mostrar " +
-                                `<select class="custom-select custom-select-sm form-control form-control-sm">
+                        `<select class="custom-select custom-select-sm form-control form-control-sm">
                                     <option value = '10'>10</option>
                                     <option value = '25'>25</option>
                                     <option value = '50'>50</option>
                                     <option value = '100'>100</option>
                                     <option value = '-1'>All</option>
                                 </select>` +
-                                " Registros",
+                        " Registros",
                 },
-                columns: [
-                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                    { data: 'event', name: 'event' },
-                    { data: 'speed', name: 'speed' },
-                    { data: 'latitude', name: 'latitude' },
-                    { data: 'longitude', name: 'longitude' },
-                    { data: 'gpsDate', name: 'gpsDate' },
-                    { data: 'odometer', name: 'odometer' },
-                    { data: 'response_timestamp', name: 'response_timestamp' },
-                    { data: 'response_message', name: 'response_message' },
-                    { data: 'response_suggestion', name: 'response_suggestion' },
-                    { data: 'response_status', name: 'response_status' }
+                columns: [{
+                        data: 'DT_RowIndex',
+                        name: 'DT_RowIndex',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'event',
+                        name: 'event'
+                    },
+                    {
+                        data: 'speed',
+                        name: 'speed'
+                    },
+                    {
+                        data: 'latitude',
+                        name: 'latitude'
+                    },
+                    {
+                        data: 'longitude',
+                        name: 'longitude'
+                    },
+                    {
+                        data: 'gpsDate',
+                        name: 'gpsDate'
+                    },
+                    {
+                        data: 'odometer',
+                        name: 'odometer'
+                    },
+                    {
+                        data: 'response_timestamp',
+                        name: 'response_timestamp'
+                    },
+                    {
+                        data: 'response_message',
+                        name: 'response_message'
+                    },
+                    {
+                        data: 'response_suggestion',
+                        name: 'response_suggestion'
+                    },
+                    {
+                        data: 'response_status',
+                        name: 'response_status'
+                    }
                 ],
                 dom: 'Bfrtilp',
-                buttons: [
-                    { extend: 'copy', text: '<i class="fas fa-copy"></i> ', className: 'btn btn-secondary' },
-                    { extend: 'csv', text: '<i class="fas fa-file-csv"></i> ', className: 'btn btn-light' },
-                    { extend: 'excel', text: '<i class="fas fa-file-excel"></i> ', className: 'btn btn-success' },
-                    { extend: 'pdf', text: '<i class="fas fa-file-pdf"></i> ', className: 'btn btn-danger' },
-                    { extend: 'print', text: '<i class="fas fa-print"></i> ', className: 'btn btn-info' },
-                    { extend: 'colvis', text: 'Filtrar columnas' }
+                buttons: [{
+                        extend: 'copy',
+                        text: '<i class="fas fa-copy"></i> ',
+                        className: 'btn btn-secondary'
+                    },
+                    {
+                        extend: 'csv',
+                        text: '<i class="fas fa-file-csv"></i> ',
+                        className: 'btn btn-light'
+                    },
+                    // {
+                    //     extend: 'excel',
+                    //     text: '<i class="fas fa-file-excel"></i> ',
+                    //     className: 'btn btn-success'
+                    // },
+                    'excelFull', // <-- este
+                    {
+                        extend: 'pdf',
+                        text: '<i class="fas fa-file-pdf"></i> ',
+                        className: 'btn btn-danger'
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> ',
+                        className: 'btn btn-info'
+                    },
+                    {
+                        extend: 'colvis',
+                        text: 'Filtrar columnas'
+                    }
                 ]
             });
-    
+
             $('#bt_find').click(function() {
                 const unit = $('#unit').val();
                 if (!unit) {
@@ -157,7 +220,7 @@
                         showCancelButton: true,
                         confirmButtonText: 'Sí, generar',
                         cancelButtonText: 'No, cancelar'
-                    }).then((result) => { 
+                    }).then((result) => {
                         if (result.isConfirmed) {
                             tabla.ajax.reload();
                         }
@@ -166,6 +229,41 @@
                     tabla.ajax.reload();
                 }
             });
+
+            $.fn.dataTable.ext.buttons.excelFull = {
+                extend: 'excel',
+                text: '<i class="fas fa-file-excel"></i>',
+                className: 'btn btn-success',
+                action: function(e, dt, button, config) {
+
+                    // Guardar los parámetros actuales
+                    let oldStart = dt.settings()[0]._iDisplayStart;
+
+                    // Pedir TODAS las filas
+                    dt.one('preXhr', function(e, s, data) {
+                        data.start = 0;
+                        data.length = -1; // traer todo del servidor
+                    });
+
+                    dt.one('xhr', function(e, s, data) {
+
+                        // Exportar con los datos ya cargados
+                        $.fn.dataTable.ext.buttons.excelHtml5.action.call(this, e, dt, button,
+                            config);
+
+                        // Restaurar paginación normal
+                        dt.one('preXhr', function(e, s, data) {
+                            data.start = oldStart;
+                        });
+
+                        // Recargar tabla normal
+                        setTimeout(dt.ajax.reload, 0);
+                    });
+
+                    // Disparar la llamada al servidor
+                    dt.ajax.reload();
+                }
+            };
         });
-    </script>    
+    </script>
 @stop
