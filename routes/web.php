@@ -86,7 +86,7 @@ Route::middleware([
     Route::get('/reports.retransmissions', [ReportController::class, 'getRetransmissionsReport'])->name('report.retransmissions');
     Route::get('reports.osinergmin', [ReportController::class, 'reportOsinergmin'])->name('reports.osinergmin');
     Route::get('reports.view-osinergmin', [ReportController::class, 'viewReportOsinergmin'])->name('reports.view-osinergmin');
-    Route::get('/reports/export-osinergmin', [ReportController::class, 'exportOsinergmin'])->name('reports.export-osinergmin');
+    Route::get('reports.export-osinergmin', [ReportController::class, 'exportOsinergmin'])->name('reports.export-osinergmin');
 
     // Pruebas de carga y lectura de imágenes
     Route::get('/upload', [ImageController::class, 'showUploadForm'])->name('image.form');
