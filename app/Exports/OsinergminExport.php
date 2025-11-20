@@ -33,21 +33,8 @@ class OsinergminExport implements FromQuery, WithHeadings
     public function headings(): array
     {
         return [
-            'ID',
-            'UUID',
-            'Placa',
-            'Evento',
-            'Velocidad',
-            'Latitud',
-            'Longitud',
-            'Fecha GPS',
-            'Odómetro',
-            'Timestamp',
-            'Mensaje',
-            'Sugerencia',
-            'Estado',
-            'Creado',
-            'Actualizado'
+            'ID','UUID','Placa','Evento','Velocidad','Latitud','Longitud',
+            'Fecha GPS','Odómetro','Timestamp','Mensaje','Sugerencia','Estado','Creado','Actualizado'
         ];
     }
 }

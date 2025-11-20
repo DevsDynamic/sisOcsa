@@ -131,7 +131,7 @@
 
             const tabla = $('#tablaPrincipal').DataTable({
                 processing: true,
-                serverSide: true,
+                serverSide: false, //true
                 ajax: {
                     url: "{{ route('reports.view-osinergmin') }}",
                     data: function(d) {
@@ -216,14 +216,16 @@
                         text: '<i class="fas fa-file-csv"></i> ',
                         className: 'btn btn-light'
                     },
-                    {
-                        text: '<i class="fas fa-file-excel"></i>',
-                        className: 'btn btn-success',
-                        action: function(e, dt, node, config) {
-                            const unit = $('#unit').val() || '';
-                            window.location = `/reports/export-osinergmin?unit=${unit}`;
-                        }
-                    },
+                    // {
+                    //     text: '<i class="fas fa-file-excel"></i>',
+                    //     className: 'btn btn-success',
+                    //     action: function(e, dt, node, config) {
+                    //         const unit = $('#unit').val() || '';
+                    //         // Abrir en nueva ventana para que Laravel devuelva correctamente la descarga
+                    //         window.open(`/reports/export-osinergmin?unit=${unit}`, '_blank');
+                    //     }
+                    // },
+                    { extend: 'excel', text: '<i class="fas fa-file-excel"></i> ', className: 'btn btn-success' },
                     {
                         extend: 'pdf',
                         text: '<i class="fas fa-file-pdf"></i> ',
