@@ -216,13 +216,14 @@
                         text: '<i class="fas fa-file-csv"></i> ',
                         className: 'btn btn-light'
                     },
-                    // {
-                    //     extend: 'excel',
-                    //     text: '<i class="fas fa-file-excel"></i> ',
-                    //     className: 'btn btn-success'
-                    // },
-                    //'excelFull', // <-- este
-                    $.fn.dataTable.ext.buttons.excelFull, // <-- ahora sí
+                    {
+                        text: '<i class="fas fa-file-excel"></i>',
+                        className: 'btn btn-success',
+                        action: function(e, dt, node, config) {
+                            const unit = $('#unit').val() || '';
+                            window.location = `/reports/export-osinergmin?unit=${unit}`;
+                        }
+                    },
                     {
                         extend: 'pdf',
                         text: '<i class="fas fa-file-pdf"></i> ',

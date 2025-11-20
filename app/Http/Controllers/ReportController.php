@@ -12,6 +12,8 @@ use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Exports\OsinergminExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
@@ -152,6 +154,12 @@ class ReportController extends Controller
             ->make(true);
     }
 
+    public function exportOsinergmin(Request $request)
+    {
+        $unit = $request->unit ?? null;
+
+        return Excel::download(new OsinergminExport($unit), 'osinergmin.xlsx');
+    }
 
     /**
      * Show the form for creating a new resource.
