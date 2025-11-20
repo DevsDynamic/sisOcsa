@@ -48,20 +48,20 @@ class ReportController extends Controller
     {
         // Obtener clientes con token registrado y activo
         $clients_ocsa = Person::whereNotNull('token')
-        ->where('token', '<>', '')
-        ->where('status', '1')
-        ->get();
+            ->where('token', '<>', '')
+            ->where('status', '1')
+            ->get();
 
         $client = new Client(); // Instancia de Guzzle
         $grouped_data = []; // Agrupación de unidades por cliente
         $unitOptions = []; // Arreglo con los datos de uuid y plate
 
         foreach ($clients_ocsa as $client_ocsa) {
-        $client_api = $client_ocsa->token;
-        $client_name = $client_ocsa->full_name;
+            $client_api = $client_ocsa->token;
+            $client_name = $client_ocsa->full_name;
 
-        // API de Unidades
-        $url_units = "https://monitoreo.ocsaperu.com/api/v1/unit/list.json?key=$client_api";
+            // API de Unidades
+            $url_units = "https://monitoreo.ocsaperu.com/api/v1/unit/list.json?key=$client_api";
 
             try {
                 // Consultar datos de unidades
@@ -108,30 +108,50 @@ class ReportController extends Controller
     //                 ->make(true);
     // }
 
+    // public function viewReportOsinergmin(Request $request)
+    // {
+    //     // Obtener la fecha actual y restar un mes
+    //     $fechaInicio = Carbon::now()->subMonth()->startOfMonth();
+    //     $fechaFin = Carbon::now()->endOfMonth();
+
+    //     // Comenzar la consulta
+    //     $unit_osinergmin = Osinergmin::query();
+
+    //     // Si el parámetro unit está presente, filtrar por uuid
+    //     if ($request->unit) {
+    //         $unit_osinergmin = $unit_osinergmin->where('uuid', '=', $request->unit);
+    //     }
+
+    //     // Filtrar por el rango de fechas
+    //     $unit_osinergmin = $unit_osinergmin
+    //                         ->whereBetween('response_timestamp', [$fechaInicio, $fechaFin])
+    //                         ->orderBy('id', 'DESC')
+    //                         ->get();
+
+    //     return Datatables::of($unit_osinergmin)
+    //                 ->addIndexColumn()
+    //                 ->make(true);
+    // }
+
     public function viewReportOsinergmin(Request $request)
     {
-        // Obtener la fecha actual y restar un mes
         $fechaInicio = Carbon::now()->subMonth()->startOfMonth();
         $fechaFin = Carbon::now()->endOfMonth();
 
-        // Comenzar la consulta
-        $unit_osinergmin = Osinergmin::query();
+        $query = Osinergmin::query();
 
-        // Si el parámetro unit está presente, filtrar por uuid
         if ($request->unit) {
-            $unit_osinergmin = $unit_osinergmin->where('uuid', '=', $request->unit);
+            $query->where('uuid', $request->unit);
         }
 
-        // Filtrar por el rango de fechas
-        $unit_osinergmin = $unit_osinergmin
-                            ->whereBetween('response_timestamp', [$fechaInicio, $fechaFin])
-                            ->orderBy('id', 'DESC')
-                            ->get();
+        $query->whereBetween('response_timestamp', [$fechaInicio, $fechaFin])
+            ->orderBy('id', 'DESC');
 
-        return Datatables::of($unit_osinergmin)
-                    ->addIndexColumn()
-                    ->make(true);
+        return Datatables::of($query)
+            ->addIndexColumn()
+            ->make(true);
     }
+
 
     /**
      * Show the form for creating a new resource.
