@@ -100,6 +100,35 @@
 
     <script>
         $(document).ready(function() {
+
+            $.fn.dataTable.ext.buttons.excelFull = {
+                text: '<i class="fas fa-file-excel"></i>',
+                className: 'btn btn-success',
+                action: function(e, dt, button, config) {
+                    let oldStart = dt.settings()[0]._iDisplayStart;
+
+                    dt.one('preXhr', function(e, s, data) {
+                        data.start = 0;
+                        data.length = -1; // traer todo
+                    });
+
+                    dt.one('xhr', function(e, s, data) {
+                        $.fn.dataTable.ext.buttons.excelHtml5.action.call(this, e, dt, button,
+                            config);
+
+                        dt.one('preXhr', function(e, s, data) {
+                            data.start = oldStart;
+                        });
+
+                        setTimeout(dt.ajax.reload, 0);
+                    });
+
+                    dt.ajax.reload();
+                }
+            };
+
+
+
             const tabla = $('#tablaPrincipal').DataTable({
                 processing: true,
                 serverSide: true,
@@ -192,7 +221,8 @@
                     //     text: '<i class="fas fa-file-excel"></i> ',
                     //     className: 'btn btn-success'
                     // },
-                    'excelFull', // <-- este
+                    //'excelFull', // <-- este
+                    $.fn.dataTable.ext.buttons.excelFull, // <-- ahora sí
                     {
                         extend: 'pdf',
                         text: '<i class="fas fa-file-pdf"></i> ',
@@ -229,41 +259,6 @@
                     tabla.ajax.reload();
                 }
             });
-
-            $.fn.dataTable.ext.buttons.excelFull = {
-                extend: 'excel',
-                text: '<i class="fas fa-file-excel"></i>',
-                className: 'btn btn-success',
-                action: function(e, dt, button, config) {
-
-                    // Guardar los parámetros actuales
-                    let oldStart = dt.settings()[0]._iDisplayStart;
-
-                    // Pedir TODAS las filas
-                    dt.one('preXhr', function(e, s, data) {
-                        data.start = 0;
-                        data.length = -1; // traer todo del servidor
-                    });
-
-                    dt.one('xhr', function(e, s, data) {
-
-                        // Exportar con los datos ya cargados
-                        $.fn.dataTable.ext.buttons.excelHtml5.action.call(this, e, dt, button,
-                            config);
-
-                        // Restaurar paginación normal
-                        dt.one('preXhr', function(e, s, data) {
-                            data.start = oldStart;
-                        });
-
-                        // Recargar tabla normal
-                        setTimeout(dt.ajax.reload, 0);
-                    });
-
-                    // Disparar la llamada al servidor
-                    dt.ajax.reload();
-                }
-            };
         });
     </script>
 @stop
