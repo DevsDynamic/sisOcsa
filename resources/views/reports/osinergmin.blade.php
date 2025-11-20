@@ -131,7 +131,7 @@
 
             const tabla = $('#tablaPrincipal').DataTable({
                 processing: true,
-                serverSide: true,
+                serverSide: false,//true
                 ajax: {
                     url: "{{ route('reports.view-osinergmin') }}",
                     data: function(d) {
@@ -216,13 +216,18 @@
                         text: '<i class="fas fa-file-csv"></i> ',
                         className: 'btn btn-light'
                     },
+                    // {
+                    //     text: '<i class="fas fa-file-excel"></i>',
+                    //     className: 'btn btn-success',
+                    //     action: function(e, dt, node, config) {
+                    //         const unit = $('#unit').val() || '';
+                    //         window.location = `/reports/export-osinergmin?unit=${unit}`;
+                    //     }
+                    // },
                     {
-                        text: '<i class="fas fa-file-excel"></i>',
-                        className: 'btn btn-success',
-                        action: function(e, dt, node, config) {
-                            const unit = $('#unit').val() || '';
-                            window.location = `/reports/export-osinergmin?unit=${unit}`;
-                        }
+                        extend: 'excel',
+                        text: '<i class="fas fa-file-excel"></i> ',
+                        className: 'btn btn-success'
                     },
                     {
                         extend: 'pdf',
