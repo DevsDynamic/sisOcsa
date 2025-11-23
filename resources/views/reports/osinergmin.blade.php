@@ -14,7 +14,18 @@
     <div class="card">
         <div class="card-body">
             <form id="formulario" name="formulario">
-                <div class="row">
+                <div class="form-row">
+                    <!-- Desde -->
+                    <div class="form-group col-lg-2">
+                        <label for="state">Desde</label>
+                        <input type="date" id="from" name="from" class="form-control" value="">
+                    </div>
+                    <!-- Hasta -->
+                    <div class="form-group col-lg-2">
+                        <label for="state">Hasta</label>
+                        <input type="date" id="to" name="to" class="form-control" value="">
+                    </div>
+                    <!-- Placa -->
                     <div class="form-group col-lg-3">
                         <label for="unit">Placa</label>
                         <select id="unit" name="unit"
@@ -99,6 +110,69 @@
     <script src="https://cdn.datatables.net/buttons/3.0.1/js/buttons.colVis.min.js"></script>
 
     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+
+            setTimeout(() => tabla.ajax.reload(), 300);
+
+            const fromInput = document.getElementById("from");
+            const toInput = document.getElementById("to");
+
+            // Fecha de hoy (YYYY-MM-DD)
+            let today = new Date();
+            let todayStr = today.toISOString().split('T')[0];
+
+            // Fecha de hace 1 mes
+            let oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            let oneMonthAgoStr = oneMonthAgo.toISOString().split('T')[0];
+
+            // --- ESTABLECER LÍMITES ---
+            fromInput.min = oneMonthAgoStr;
+            fromInput.max = todayStr;
+
+            toInput.min = oneMonthAgoStr;
+            toInput.max = todayStr;
+
+            // --- VALORES POR DEFECTO ---
+            fromInput.value = todayStr;
+            toInput.value = todayStr;
+
+            // --- VALIDACIONES CORREGIDAS ---
+
+            // Cuando cambia FROM:
+            fromInput.addEventListener("change", function() {
+                // Evitar menor a límite
+                if (fromInput.value < oneMonthAgoStr) {
+                    fromInput.value = oneMonthAgoStr;
+                }
+                // Evitar mayor que hoy
+                if (fromInput.value > todayStr) {
+                    fromInput.value = todayStr;
+                }
+
+                // Ajustar TO para que nunca sea menor que FROM
+                if (toInput.value < fromInput.value) {
+                    toInput.value = fromInput.value;
+                }
+
+                // Actualizar límite inferior de TO
+                toInput.min = fromInput.value;
+            });
+
+            // Cuando cambia TO:
+            toInput.addEventListener("change", function() {
+                // Evitar mayor que hoy
+                if (toInput.value > todayStr) {
+                    toInput.value = todayStr;
+                }
+                // Evitar menor que FROM
+                if (toInput.value < fromInput.value) {
+                    toInput.value = fromInput.value;
+                }
+            });
+
+        });
+
         $(document).ready(function() {
 
             $.fn.dataTable.ext.buttons.excelFull = {
@@ -127,15 +201,15 @@
                 }
             };
 
-
-
             const tabla = $('#tablaPrincipal').DataTable({
                 processing: true,
-                serverSide: true, //true
+                serverSide: true,
                 ajax: {
                     url: "{{ route('reports.view-osinergmin') }}",
                     data: function(d) {
                         d.unit = $('#unit').val(); // Enviar parámetro dinámico
+                        d.from = $('#from').val(); // Desde
+                        d.to = $('#to').val(); // Hasta
                     }
                 },
                 language: {
@@ -220,9 +294,12 @@
                         text: '<i class="fas fa-file-excel"></i>',
                         className: 'btn btn-success',
                         action: function(e, dt, node, config) {
-                            const unit = $('#unit').val() || '';
-                            // Abrir en nueva ventana para que Laravel devuelva correctamente la descarga
-                            window.open(`/reports.export-osinergmin?unit=${unit}`, '_blank');
+                            const unit = $('#unit').val();
+                            const from = $('#from').val();
+                            const to = $('#to').val();
+                            window.open(
+                                `/reports.export-osinergmin?unit=${unit}&from=${from}&to=${to}`,
+                                '_blank');
                         }
                     },
                     // { extend: 'excel', text: '<i class="fas fa-file-excel"></i> ', className: 'btn btn-success' },
@@ -245,6 +322,17 @@
 
             $('#bt_find').click(function() {
                 const unit = $('#unit').val();
+                const from = $('#from').val();
+                const to = $('#to').val();
+
+                if (!from || !to) {
+                    return Swal.fire({
+                        icon: 'warning',
+                        title: 'Fechas requeridas',
+                        text: 'Debes seleccionar un rango de fechas.'
+                    });
+                }
+
                 if (!unit) {
                     Swal.fire({
                         title: '¿Generar reporte para todas las unidades?',

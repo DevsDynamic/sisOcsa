@@ -92,73 +92,65 @@ class ReportController extends Controller
         return view('reports.osinergmin', compact('unitOptions'));
     }
 
-    // public function viewReportOsinergmin(Request $request)
-    // {
-    //     //dd($request->unit);  // Verificar el valor de unit
-    //     // Obtener la fecha actual y restar un mes
-    //     $fechaInicio = Carbon::now()->subMonth()->startOfMonth();
-    //     $fechaFin = Carbon::now()->endOfMonth();
-
-    //     // Buscar la unidad por su uuid y filtrar por el último mes
-    //     $unit_osinergmin = Osinergmin::where('uuid', '=', $request->unit)
-    //         ->whereBetween('response_timestamp', [$fechaInicio, $fechaFin])
-    //         ->orderBy('id', 'DESC')
-    //         ->get();
-
-    //     return Datatables::of($unit_osinergmin)
-    //                 ->addIndexColumn()
-    //                 ->make(true);
-    // }
-
-    // public function viewReportOsinergmin(Request $request)
-    // {
-    //     // Obtener la fecha actual y restar un mes
-    //     $fechaInicio = Carbon::now()->subMonth()->startOfMonth();
-    //     $fechaFin = Carbon::now()->endOfMonth();
-
-    //     // Comenzar la consulta
-    //     $unit_osinergmin = Osinergmin::query();
-
-    //     // Si el parámetro unit está presente, filtrar por uuid
-    //     if ($request->unit) {
-    //         $unit_osinergmin = $unit_osinergmin->where('uuid', '=', $request->unit);
-    //     }
-
-    //     // Filtrar por el rango de fechas
-    //     $unit_osinergmin = $unit_osinergmin
-    //                         ->whereBetween('response_timestamp', [$fechaInicio, $fechaFin])
-    //                         ->orderBy('id', 'DESC')
-    //                         ->get();
-
-    //     return Datatables::of($unit_osinergmin)
-    //                 ->addIndexColumn()
-    //                 ->make(true);
-    // }
-
     public function viewReportOsinergmin(Request $request)
     {
-        $fechaInicio = Carbon::now()->subMonth()->startOfMonth();
-        $fechaFin = Carbon::now()->endOfMonth();
+        $from = $request->from ?: date('Y-m-d');
+        $to   = $request->to   ?: date('Y-m-d');
 
-        $query = Osinergmin::query();
 
-        if ($request->unit) {
+        $query = Osinergmin::select(
+            'id',
+            'uuid',
+            'plate',
+            'event',
+            'speed',
+            'latitude',
+            'longitude',
+            'gpsDate',
+            'odometer',
+            'response_timestamp',
+            'response_message',
+            'response_suggestion',
+            'response_status',
+            'created_at',
+            'updated_at'
+        )
+            ->whereBetween('response_timestamp', [$from, $to])
+            ->orderBy('id', 'DESC');
+
+        // Filtro opcional por unidad (uuid)
+        if (!empty($request->unit)) {
             $query->where('uuid', $request->unit);
         }
 
-        $query->whereBetween('response_timestamp', [$fechaInicio, $fechaFin])
-            ->orderBy('id', 'DESC');
+        $result = $query->get();
 
-        return Datatables::of($query)
+        //return $result;
+        return DataTables::of($query)
             ->addIndexColumn()
             ->make(true);
     }
 
     public function exportOsinergmin(Request $request)
     {
+        // $unit = $request->unit ?? null;
+
+        // return Excel::download(new OsinergminExport($unit), 'osinergmin.xlsx');
+
         $unit = $request->unit ?? null;
 
-        return Excel::download(new OsinergminExport($unit), 'osinergmin.xlsx');
+        // Fechas
+        $hoy = Carbon::today()->endOfDay();
+        $limiteMinimo = Carbon::today()->subMonth()->startOfDay();
+
+        $from = $request->from ? Carbon::parse($request->from)->startOfDay() : $hoy->copy()->startOfDay();
+        $to   = $request->to   ? Carbon::parse($request->to)->endOfDay()   : $hoy;
+
+        // Limitar fechas al rango permitido
+        if ($from->lt($limiteMinimo)) $from = $limiteMinimo;
+        if ($to->gt($hoy)) $to = $hoy;
+
+        return Excel::download(new OsinergminExport($unit, $from, $to), 'osinergmin.xlsx');
     }
 
     /**
