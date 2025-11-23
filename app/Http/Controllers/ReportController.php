@@ -97,7 +97,6 @@ class ReportController extends Controller
         $from = $request->from ?: date('Y-m-d');
         $to   = $request->to   ?: date('Y-m-d');
 
-
         $query = Osinergmin::select(
             'id',
             'uuid',
@@ -133,22 +132,10 @@ class ReportController extends Controller
 
     public function exportOsinergmin(Request $request)
     {
-        // $unit = $request->unit ?? null;
-
-        // return Excel::download(new OsinergminExport($unit), 'osinergmin.xlsx');
-
         $unit = $request->unit ?? null;
 
-        // Fechas
-        $hoy = Carbon::today()->endOfDay();
-        $limiteMinimo = Carbon::today()->subMonth()->startOfDay();
-
-        $from = $request->from ? Carbon::parse($request->from)->startOfDay() : $hoy->copy()->startOfDay();
-        $to   = $request->to   ? Carbon::parse($request->to)->endOfDay()   : $hoy;
-
-        // Limitar fechas al rango permitido
-        if ($from->lt($limiteMinimo)) $from = $limiteMinimo;
-        if ($to->gt($hoy)) $to = $hoy;
+        $from = $request->from ?: date('Y-m-d');
+        $to   = $request->to   ?: date('Y-m-d');
 
         return Excel::download(new OsinergminExport($unit, $from, $to), 'osinergmin.xlsx');
     }

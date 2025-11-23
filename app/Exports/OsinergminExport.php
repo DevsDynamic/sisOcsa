@@ -47,8 +47,8 @@ class OsinergminExport implements FromQuery, WithHeadings
     public function __construct($unit = null, $from = null, $to = null)
     {
         $this->unit = $unit;
-        $this->from = $from ?? Carbon::today()->startOfDay();
-        $this->to   = $to   ?? Carbon::today()->endOfDay();
+        $this->from = $from;
+        $this->to   = $to;
     }
 
     public function query()
