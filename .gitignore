@@ -1,19 +1,31 @@
-/.phpunit.cache
+# Dependencias
+/vendor/
 /node_modules
+
+# Archivos de entorno
+.env
+.env.backup
+.env.production
+
+# Archivos generados
 /public/build
 /public/hot
 /public/storage
 /storage/*.key
-/vendor
-.env
-.env.backup
-.env.production
+
+# PHPUnit
+.phpunit.cache
 .phpunit.result.cache
+
+# Configuración Homestead
 Homestead.json
 Homestead.yaml
-auth.json
+
+# Logs y errores
 npm-debug.log
 yarn-error.log
-/.fleet
+
+# Editores / IDE
 /.idea
 /.vscode
+/.fleet
