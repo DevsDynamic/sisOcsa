@@ -24,12 +24,30 @@ class SendOsinergminData extends Command
             return self::SUCCESS;
         }
 
+        $results = method_exists($response, 'getData')
+            ? ($response->getData()['resu'] ?? [])
+            : [];
+        $successCount = collect($results)->where('status', 'SUCCESS')->count();
+        $errorResults = collect($results)->where('status', 'ERROR');
+
+        foreach ($errorResults as $errorResult) {
+            $this->error($errorResult['error_message'] ?? 'Error de envio sin detalle.');
+        }
+
         $this->call('osinergmin:prune', [
             '--days' => 30,
             '--limit' => 1000,
         ]);
 
-        $this->info('Envio a Osinergmin finalizado.');
+        if ($errorResults->isNotEmpty()) {
+            $this->warn(
+                "Envio finalizado con {$successCount} tramas exitosas y {$errorResults->count()} errores."
+            );
+
+            return self::FAILURE;
+        }
+
+        $this->info("Envio a Osinergmin finalizado: {$successCount} tramas exitosas.");
 
         return self::SUCCESS;
     }
