@@ -67,7 +67,7 @@
     </style>
 </head>
 
-<body class="antialiased" onLoad="redireccionar()">
+<body class="antialiased">
     <div class="container">
         <div class="row">
             <div class="col-md-3">
@@ -149,15 +149,6 @@
             </div>
         </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-
-    <script language="JavaScript">
-        function redireccionar() {
-            setTimeout("location.href='http://ocsa.dmautomotriz.com/api/send-data-osinergmin'", 120000); // Cambiar la URL según sea necesario
-            //http://127.0.0.1:8000/api/task
-            //http://sisocsa.com/api/send-data-osinergmin
-        }
-    </script>
 </body>
 
 </html>

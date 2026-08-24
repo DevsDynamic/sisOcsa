@@ -290,6 +290,13 @@ class OsinergminController extends Controller
     
     public function retransmissionUnits(Request $request, $id)
     {
+        abort_if(!is_string($id) || strlen($id) > 255, 404);
+
+        $requestedLength = (int) $request->input('length', 25);
+        $request->merge([
+            'length' => $requestedLength < 1 ? 25 : min($requestedLength, 100),
+        ]);
+
         // Obtener la fecha actual y restar un mes
         $fechaInicio = Carbon::now()->subDays(30)->startOfDay();
         $fechaFin = Carbon::now()->endOfDay();
