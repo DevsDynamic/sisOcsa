@@ -32,7 +32,8 @@ class User extends Authenticatable
         'password',
         'profile_photo_path',
         'access',
-        'status'
+        'status',
+        'is_system_owner',
     ];
 
     /**
@@ -66,6 +67,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_system_owner' => 'boolean',
         ];
     }
 
@@ -77,5 +79,14 @@ class User extends Authenticatable
     public function person()
     {
         return $this->belongsTo(Person::class, 'user_id', 'id');
+    }
+
+    public function scopeVisibleTo($query, ?self $viewer)
+    {
+        if ($viewer?->is_system_owner) {
+            return $query;
+        }
+
+        return $query->where('users.is_system_owner', false);
     }
 }

@@ -129,73 +129,45 @@
             modal.find('.entity').text(entity);
             modal.find('.plate').text(plate);
 
-            var array_length = '';
-            
-            // Llamada AJAX para obtener detalles
-            $.ajax({
-                url: `/osinergmin-retransmission/${unidadId}`, 
-                method: 'GET',
-                success: function(data) {
-                    console.log(data);
-                    $('#modal-show-unit').modal('show');
-                    
-                    // **SECCIÓN DE DETALLE DE VALE DE SALIDA**
-                    // Primero, eliminamos cualquier DataTable previa para evitar duplicados
-                    if ($.fn.DataTable.isDataTable('#detalles')) {
-                        $('#detalles').DataTable().destroy();
-                    }
+            modal.modal('show');
 
-                    // Limpiamos el contenido del tbody
-                    let detallesTable = $('#detalles tbody');
-                    detallesTable.empty(); 
+            if ($.fn.DataTable.isDataTable('#detalles')) {
+                $('#detalles').DataTable().destroy();
+                $('#detalles tbody').empty();
+            }
 
-                    // Agregar filas dinámicamente
-                    if (data.data.length > 0) {
-                        data.data.forEach((item, index) => {
-                            let idRetransmision = item.id; // ✅ Accede correctamente al ID de cada detalle
-                            let codigo = 'OSIN' + ('00000' + idRetransmision).slice(-5);
-                            let fila = `
-                                <tr class="newrow">
-                                    <th scope="row">${index + 1}</th> 
-                                    <td>${codigo}</td>
-                                    <td>${item.event || 'Sin registro'}</td>
-                                    <td>${item.speed || 'Sin registro'}</td>
-                                    <td>${item.latitude || 'Sin registro'}</td>
-                                    <td>${item.longitude || 'Sin registro'}</td>
-                                    <td>${item.gpsDate || 'Sin registro'}</td>
-                                    <td>${item.odometer || 'Sin registro'}</td>
-                                    <td>${item.response_timestamp || 'Sin registro'}</td>
-                                    <td>${item.response_message || 'Sin registro'}</td>
-                                    <td>${item.response_suggestion || 'Sin registro'}</td>
-                                    <td>${item.response_status || 'Sin registro'}</td>
-                                </tr>
-                            `;
-                            detallesTable.append(fila);
-                        });
-                    } else {
-                        // Si no hay datos, agregar un mensaje en la tabla
-                        detallesTable.append('<tr><td colspan="12" class="text-center">No hay detalles registrados</td></tr>');
-                    }
-
-                    // Ahora sí inicializamos DataTables
-                    $('#detalles').DataTable({
-                        responsive: true,
-                        paging: true,
-                        ordering: true,
-                        info: true,
-                        autoWidth: false,
-                        language: {
-                            search: "Buscar:",
-                            lengthMenu: "Mostrar _MENU_ registros",
-                            info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                            paginate: {
-                                previous: "Anterior",
-                                next: "Siguiente"
-                            }
-                        }
-                    });
+            $('#detalles').DataTable({
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                autoWidth: false,
+                pageLength: 25,
+                order: [[1, 'desc']],
+                ajax: `/osinergmin-retransmission/${encodeURIComponent(unidadId)}`,
+                columns: [
+                    { data: 'DT_RowIndex', orderable: false, searchable: false },
+                    { data: 'code', name: 'id', searchable: false },
+                    { data: 'event', name: 'event', defaultContent: 'Sin registro' },
+                    { data: 'speed', name: 'speed', defaultContent: 'Sin registro' },
+                    { data: 'latitude', name: 'latitude', defaultContent: 'Sin registro' },
+                    { data: 'longitude', name: 'longitude', defaultContent: 'Sin registro' },
+                    { data: 'gpsDate', name: 'gpsDate', defaultContent: 'Sin registro' },
+                    { data: 'odometer', name: 'odometer', defaultContent: 'Sin registro' },
+                    { data: 'response_timestamp', name: 'response_timestamp', defaultContent: 'Sin registro' },
+                    { data: 'response_message', name: 'response_message', defaultContent: 'Sin registro' },
+                    { data: 'response_suggestion', name: 'response_suggestion', defaultContent: 'Sin registro' },
+                    { data: 'response_status', name: 'response_status', defaultContent: 'Sin registro' }
+                ],
+                language: {
+                    emptyTable: 'No hay detalles registrados',
+                    processing: 'Consultando retransmisiones...',
+                    search: 'Buscar:',
+                    lengthMenu: 'Mostrar _MENU_ registros',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    paginate: { previous: 'Anterior', next: 'Siguiente' }
                 }
-            });            
+            });
+
         });
     </script>
 

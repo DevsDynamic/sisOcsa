@@ -2,6 +2,18 @@
 
 return [
 
+    'osinergmin' => [
+        'environment' => in_array(
+            env('OSINERGMIN_ENVIRONMENT', env('APP_ENV')),
+            ['production', 'prod'],
+            true
+        ) ? 'production' : 'development',
+        'tokens' => [
+            'production' => env('OSINERGMIN_TOKEN_PROD'),
+            'development' => env('OSINERGMIN_TOKEN_DEV'),
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

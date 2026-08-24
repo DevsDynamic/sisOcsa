@@ -32,7 +32,7 @@ class UserController extends Controller
     }
 
     public function indexTable(){
-        $users = User::join('role_user as ru', 'users.id', 'ru.user_id')
+        $users = User::visibleTo(Auth::user())->join('role_user as ru', 'users.id', 'ru.user_id')
                         ->join('roles as r', 'ru.role_id', 'r.id')
                         ->select(
                             'users.id AS id',
@@ -122,7 +122,7 @@ class UserController extends Controller
     }
 
     public function indexTableAdmin(){
-        $users = User::join('role_user as ru', 'users.id', 'ru.user_id')
+        $users = User::visibleTo(Auth::user())->join('role_user as ru', 'users.id', 'ru.user_id')
                         ->join('roles as r', 'ru.role_id', 'r.id')
                         ->select(
                             'users.id AS id',
@@ -210,7 +210,7 @@ class UserController extends Controller
     }
 
     public function indexTableCustomer(){
-        $users = User::join('role_user as ru', 'users.id', 'ru.user_id')
+        $users = User::visibleTo(Auth::user())->join('role_user as ru', 'users.id', 'ru.user_id')
                         ->join('roles as r', 'ru.role_id', 'r.id')
                         ->select(
                             'users.id AS id',
@@ -385,7 +385,7 @@ class UserController extends Controller
 
     public function show($id)
     {
-        $user = User::leftjoin('role_user as ru', 'users.id', 'ru.user_id')
+        $user = User::visibleTo(Auth::user())->leftjoin('role_user as ru', 'users.id', 'ru.user_id')
                     ->leftjoin('roles as r', 'ru.role_id', 'r.id')
                     ->select(
                         'users.id AS id',
@@ -404,7 +404,7 @@ class UserController extends Controller
 
     public function edit($id)
     {
-        $user = User::join('role_user AS ru', 'users.id', '=', 'ru.user_id')
+        $user = User::visibleTo(Auth::user())->join('role_user AS ru', 'users.id', '=', 'ru.user_id')
                     ->select(
                         'users.id AS id',
                         'users.username AS email',
@@ -458,6 +458,7 @@ class UserController extends Controller
         try {
             // Obtener el usuario existente
             $user = User::findOrFail($id);
+            abort_if($user->is_system_owner && !Auth::user()->is_system_owner, 404);
 
             // Definir la variable de almacenamiento de la foto
             $file_photo_name = $user->profile_photo_path; // Mantener la foto actual si no se sube una nueva
@@ -537,6 +538,8 @@ class UserController extends Controller
             ], 404);
         }
 
+        abort_if($user->is_system_owner, 403, 'No se puede desactivar al propietario del sistema.');
+
         try {
             DB::beginTransaction();
 
@@ -572,6 +575,7 @@ class UserController extends Controller
         ]);
 
         $user = User::findOrFail($request->user_id);
+        abort_if($user->is_system_owner, 403, 'No se puede quitar acceso al propietario del sistema.');
 
         if (!$user) {
             return response()->json([

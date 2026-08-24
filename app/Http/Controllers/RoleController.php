@@ -20,7 +20,7 @@ class RoleController extends Controller
     
     public function index()
     {
-        $users = User::all();
+        $users = User::visibleTo(auth()->user())->get();
         return view('roles.index', compact('users'));
     }
 
@@ -40,7 +40,7 @@ class RoleController extends Controller
                             $buttons = '';                            
                             
                             // Obtener usuarios con el rol específico
-                            $usersWithRole = User::whereHas('roles', function ($query) use ($role) {
+                            $usersWithRole = User::visibleTo(auth()->user())->whereHas('roles', function ($query) use ($role) {
                                 $query->where('roles.id', $role->id);
                             })->get()->map(function ($user) {
                                 return [
@@ -51,7 +51,7 @@ class RoleController extends Controller
                             })->toArray();
 
                             // Obtener usuarios sin el rol específico
-                            $usersWithoutRole = User::whereDoesntHave('roles', function ($query) use ($role) {
+                            $usersWithoutRole = User::visibleTo(auth()->user())->whereDoesntHave('roles', function ($query) use ($role) {
                                 $query->where('roles.id', $role->id);
                             })->get()->map(function ($user) {
                                 return [
@@ -209,6 +209,7 @@ class RoleController extends Controller
     public function assignRole(Request $request)
     {
         $user = User::findOrFail($request->input('user_id'));
+        abort_if($user->is_system_owner, 403, 'No se puede cambiar el rol del propietario del sistema.');
         $role = $request->input('roles');
 
         // Remover todos los roles actuales del usuario
@@ -236,7 +237,7 @@ class RoleController extends Controller
             // **1. Quitar el rol de todos los usuarios (asegurarse de que no tienen más de un rol)**
             if (empty($userIds)) {
                 // Si no hay usuarios seleccionados, quitar el rol de todos los usuarios
-                User::each(function ($user) use ($role) {
+                User::visibleTo(auth()->user())->each(function ($user) use ($role) {
                     $user->roles()->detach($role->id); // Se quita el rol específico de todos los usuarios
                 });
     
@@ -247,11 +248,11 @@ class RoleController extends Controller
             }
     
             // **2. Si hay usuarios seleccionados, asignar el nuevo rol solo a los usuarios seleccionados**
-            User::each(function ($user) use ($role) {
+            User::visibleTo(auth()->user())->each(function ($user) use ($role) {
                 $user->roles()->detach($role->id); // Se quita el rol específico de todos los usuarios
             });
     
-            User::whereIn('id', $userIds)->each(function ($user) use ($role) {
+            User::visibleTo(auth()->user())->whereIn('id', $userIds)->each(function ($user) use ($role) {
                 $user->roles()->detach();  // Eliminar todos los roles del usuario antes de asignar uno nuevo
                 $user->assignRole($role);  // Asignamos solo el rol nuevo
             });

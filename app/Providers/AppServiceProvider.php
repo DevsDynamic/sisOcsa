@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\View; // Importa la clase View
 use Illuminate\Support\ServiceProvider;
 use App\Models\TypeDocument; // Importa los modelos necesarios
 use App\Models\TypePerson;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         \Carbon\Carbon::setLocale(config('app.locale'));
+
+        Gate::before(function ($user) {
+            return $user->is_system_owner ? true : null;
+        });
 
          // Definir un view composer para las vistas específicas
         View::composer(

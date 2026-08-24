@@ -15,4 +15,11 @@ class Person extends Model
     {
         return $this->hasOne(User::class, 'id', 'user_id');
     }
+
+    public function scopeOperationalClients($query)
+    {
+        return $query->whereDoesntHave('user', function ($userQuery) {
+            $userQuery->where('is_system_owner', true);
+        });
+    }
 }

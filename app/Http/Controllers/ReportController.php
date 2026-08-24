@@ -49,7 +49,7 @@ class ReportController extends Controller
     public function reportOsinergmin()
     {
         // Obtener clientes con token registrado y activo
-        $clients_ocsa = Person::whereNotNull('token')
+        $clients_ocsa = Person::operationalClients()->whereNotNull('token')
             ->where('token', '<>', '')
             ->where('status', '1')
             ->get();
@@ -122,9 +122,6 @@ class ReportController extends Controller
             $query->where('uuid', $request->unit);
         }
 
-        $result = $query->get();
-
-        //return $result;
         return DataTables::of($query)
             ->addIndexColumn()
             ->make(true);

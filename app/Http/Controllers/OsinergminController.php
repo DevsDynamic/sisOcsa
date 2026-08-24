@@ -29,7 +29,7 @@ class OsinergminController extends Controller
     public function indexTable()
     {
         // Obtener clientes con token registrado y activo
-        $clients_ocsa = Person::whereNotNull('token')
+        $clients_ocsa = Person::operationalClients()->whereNotNull('token')
             ->where('token', '<>', '')
             ->where('status', '1')
             ->get();
@@ -288,30 +288,22 @@ class OsinergminController extends Controller
         //
     }
     
-    public function retransmissionUnits($id)
+    public function retransmissionUnits(Request $request, $id)
     {
         // Obtener la fecha actual y restar un mes
-        $fechaInicio = Carbon::now()->subMonth()->startOfMonth();
-        $fechaFin = Carbon::now()->endOfMonth();
+        $fechaInicio = Carbon::now()->subDays(30)->startOfDay();
+        $fechaFin = Carbon::now()->endOfDay();
 
         // Buscar la unidad por su uuid y filtrar por el último mes
-        $unit_osinergmin = Osinergmin::where('uuid', '=', $id)
+        $query = Osinergmin::where('uuid', '=', $id)
             ->whereBetween('created_at', [$fechaInicio, $fechaFin])
-            ->orderBy('id', 'DESC')
-            ->get();
+            ->orderBy('id', 'DESC');
 
         // Verificar si existe la unidad
-        if ($unit_osinergmin) {
-            return response()->json([
-                'success' => true,
-                'data' => $unit_osinergmin
-            ]);
-        } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unidad no encontrada'
-            ], 404);
-        }
+        return DataTables::eloquent($query)
+            ->addIndexColumn()
+            ->addColumn('code', fn (Osinergmin $row) => 'OSIN' . str_pad((string) $row->id, 5, '0', STR_PAD_LEFT))
+            ->toJson();
     }
 
 

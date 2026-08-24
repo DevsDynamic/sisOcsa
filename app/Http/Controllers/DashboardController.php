@@ -12,9 +12,9 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $co = Person::where('type_person_id', 1)->count();
-        $cp = Person::where('type_person_id', 2)->count();
-        $personToken = Person::whereNotNull('token')->where('token', '!=', '')->count();
+        $co = Person::operationalClients()->where('type_person_id', 1)->count();
+        $cp = Person::operationalClients()->where('type_person_id', 2)->count();
+        $personToken = Person::operationalClients()->whereNotNull('token')->where('token', '!=', '')->count();
 
         return view('dashboard', compact('co', 'cp', 'personToken'));
     }

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Models\User;
 
 class PersonController extends Controller
 {
@@ -46,7 +47,11 @@ class PersonController extends Controller
                                     'people.token AS token',
                                     'people.status AS status',
                                     'people.created_at AS created_date'                            
-                                    )                            
+                                    )
+                            ->when(!auth()->user()->is_system_owner, fn ($query) => $query
+                                ->where(fn ($visible) => $visible
+                                    ->whereNull('u.id')
+                                    ->orWhere('u.is_system_owner', false)))
                             ->get();
 
         return Datatables::of($people)
@@ -124,7 +129,11 @@ class PersonController extends Controller
                                     'people.token AS token',
                                     'people.status AS status',
                                     'people.created_at AS created_date'                            
-                                    ) 
+                                    )
+                            ->when(!auth()->user()->is_system_owner, fn ($query) => $query
+                                ->where(fn ($visible) => $visible
+                                    ->whereNull('u.id')
+                                    ->orWhere('u.is_system_owner', false)))
                             ->where('tp.code','CO')                           
                             ->get();
 
@@ -205,7 +214,11 @@ class PersonController extends Controller
                                     'people.token AS token',
                                     'people.status AS status',
                                     'people.created_at AS created_date'                            
-                                    )  
+                                    )
+                            ->when(!auth()->user()->is_system_owner, fn ($query) => $query
+                                ->where(fn ($visible) => $visible
+                                    ->whereNull('u.id')
+                                    ->orWhere('u.is_system_owner', false)))
                             ->where('tp.code','CP')                           
                             ->get();
 
@@ -375,7 +388,11 @@ class PersonController extends Controller
                                     'people.token AS token',
                                     'people.status AS status',
                                     'people.created_at AS created_date'                            
-                                    )  
+                                    )
+                            ->when(!auth()->user()->is_system_owner, fn ($query) => $query
+                                ->where(fn ($visible) => $visible
+                                    ->whereNull('u.id')
+                                    ->orWhere('u.is_system_owner', false)))
                             ->where('people.id', $id)                           
                             ->first();
             
@@ -413,7 +430,11 @@ class PersonController extends Controller
                                         'people.token AS token',
                                         'people.status AS status',
                                         'people.created_at AS created_date'                            
-                                        )  
+                                        )
+                                ->when(!auth()->user()->is_system_owner, fn ($query) => $query
+                                    ->where(fn ($visible) => $visible
+                                        ->whereNull('u.id')
+                                        ->orWhere('u.is_system_owner', false)))
                                 ->where('people.id', $id)                           
                                 ->first();
             
@@ -428,6 +449,7 @@ class PersonController extends Controller
     public function update(Request $request, $id)
     {
         $person = Person::find($id);
+        $this->abortIfSystemOwnerPerson($person);
 
         if (!$person) {
             return response()->json([
@@ -536,6 +558,7 @@ class PersonController extends Controller
         ]);
 
         $person = Person::find($request->register_id);
+        $this->abortIfSystemOwnerPerson($person);
 
         if (!$person) {
             return response()->json([
@@ -565,5 +588,17 @@ class PersonController extends Controller
                 'error' => 'Error al cambiar el estado del cliente <strong>' . $person->full_name . '</strong>: ' . $th->getMessage()
             ], 500);
         }
+    }
+
+    private function abortIfSystemOwnerPerson(?Person $person): void
+    {
+        if (!$person || auth()->user()->is_system_owner || !$person->user_id) {
+            return;
+        }
+
+        abort_if(
+            User::whereKey($person->user_id)->where('is_system_owner', true)->exists(),
+            404
+        );
     }
 }
