@@ -27,6 +27,7 @@ class PublicIntegrationStatusController extends Controller
             'total' => $units->count(),
             'success' => $units->where('response_status', 'SUCCESS')->count(),
             'error' => $units->where('response_status', 'ERROR')->count(),
+            'unknown' => $units->whereNotIn('response_status', ['SUCCESS', 'ERROR'])->count(),
         ];
 
         return view('integration-monitor.public-status', compact('latestRun', 'units', 'summary'));

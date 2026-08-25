@@ -295,24 +295,24 @@ class TaskController extends Controller
                     }
 
                     // Verificar si $response_data tiene 'status'
-                    $responseStatus = strtoupper((string) ($response_data['status'] ?? ''));
-                    $status = $estado === 202 || in_array(
-                        $responseStatus,
-                        ['CREATED', 'ACCEPTED', 'SUCCESS'],
-                        true
-                    ) ? 'SUCCESS' : 'ERROR';
+                    $status = $this->providerStatus($response_data, $resultado, $estado);
 
                     // Asignar el mensaje basado en la respuesta de OSINERGMIN
-                    $response_message = $this->providerMessage(
-                        $response_data,
-                        $estado === 202 ? 'Trama aceptada por PMGO para procesamiento.' : 'Osinergmin no devolvió un motivo descriptivo.'
+                    $generalMessage = $this->providerMessage(
+                        $resultado,
+                        $estado === 202 ? 'Trama aceptada por PMGO para procesamiento.' : 'Osinergmin no devolvió un mensaje descriptivo.'
                     );
+                    $response_message = $this->providerMessage($response_data, $generalMessage);
 
                     // Establecer el mensaje de error solo si el estado es 'ERROR'
                     $error_message = $status === 'ERROR' ? $response_message : '';
 
                     // Obtener la sugerencia si está presente
-                    $response_suggestion = $response_data['suggestion'] ?? $response_data['recommendation'] ?? null;
+                    $response_suggestion = $response_data['suggestion']
+                        ?? $response_data['recommendation']
+                        ?? $resultado['suggestion']
+                        ?? $resultado['recommendation']
+                        ?? null;
                     if (is_array($response_suggestion)) {
                         $response_suggestion = json_encode($response_suggestion, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     }
@@ -330,7 +330,18 @@ class TaskController extends Controller
                             $detail,
                             $client_ocsa->id,
                             $estado,
-                            ['plate' => $plate, 'endpoint' => $urlEndpoint, 'response' => $response_data]
+                            ['plate' => $plate, 'endpoint' => $urlEndpoint, 'item_response' => $response_data, 'full_response' => $resultado]
+                        );
+                    } elseif ($status === 'UNKNOWN') {
+                        $plate = $unit['plate'] ?? 'sin placa';
+                        $this->integrationLog(
+                            $osinergmin_environment,
+                            'OSINERGMIN',
+                            'WARNING',
+                            "Placa {$plate}: HTTP {$estado}, pero la respuesta no indicó si fue aceptada o rechazada. {$response_message}",
+                            $client_ocsa->id,
+                            $estado,
+                            ['plate' => $plate, 'endpoint' => $urlEndpoint, 'item_response' => $response_data, 'full_response' => $resultado]
                         );
                     }
 
@@ -375,11 +386,12 @@ class TaskController extends Controller
                 $clientResults = collect(array_slice($resu, $resultStart));
                 $clientErrors = $clientResults->where('status', 'ERROR')->count();
                 $clientSuccesses = $clientResults->where('status', 'SUCCESS')->count();
+                $clientUnknown = $clientResults->where('status', 'UNKNOWN')->count();
                 $this->integrationLog(
                     $osinergmin_environment,
                     'OSINERGMIN',
-                    $clientErrors > 0 ? 'ERROR' : 'SUCCESS',
-                    "Cliente {$client_name}: {$clientSuccesses} tramas aceptadas y {$clientErrors} rechazadas.",
+                    $clientErrors > 0 ? 'ERROR' : ($clientUnknown > 0 ? 'WARNING' : 'SUCCESS'),
+                    "Cliente {$client_name}: {$clientSuccesses} aceptadas, {$clientErrors} rechazadas y {$clientUnknown} sin estado concluyente.",
                     $client_ocsa->id,
                     $estado,
                     ['endpoint' => $urlEndpoint, 'type' => $type]
@@ -410,15 +422,39 @@ class TaskController extends Controller
         }
         $errors = collect($resu)->where('status', 'ERROR')->count();
         $successes = collect($resu)->where('status', 'SUCCESS')->count();
+        $unknowns = collect($resu)->where('status', 'UNKNOWN')->count();
         $this->integrationLog(
             $osinergmin_environment,
             'RUN',
-            $errors > 0 ? 'ERROR' : 'SUCCESS',
-            "Ejecución finalizada: {$successes} resultados exitosos y {$errors} con error; {$clients_ocsa->count()} clientes evaluados."
+            $errors > 0 ? 'ERROR' : ($unknowns > 0 ? 'WARNING' : 'SUCCESS'),
+            "Ejecución finalizada: {$successes} aceptados, {$errors} rechazados y {$unknowns} sin estado concluyente; {$clients_ocsa->count()} clientes evaluados."
         );
 
         return view('welcome', compact('resu', 'Date'));
         //return $resu;
+    }
+
+    private function providerStatus(array $item, array $response, int $httpStatus): string
+    {
+        $providerStatus = strtoupper(trim((string) ($item['status'] ?? $response['status'] ?? '')));
+
+        if ($httpStatus === 202 || in_array($providerStatus, ['CREATED', 'ACCEPTED', 'SUCCESS', 'OK', 'PROCESSED', 'RECEIVED'], true)) {
+            return 'SUCCESS';
+        }
+
+        if ($httpStatus < 200 || $httpStatus >= 300 || in_array($providerStatus, ['ERROR', 'REJECTED', 'FAILED', 'INVALID'], true)) {
+            return 'ERROR';
+        }
+
+        $message = mb_strtolower($this->providerMessage($item, $this->providerMessage($response, '')));
+        if ($message !== '' && preg_match('/success|created|accepted|procesad|recibid|registrad|aceptad/', $message)) {
+            return 'SUCCESS';
+        }
+        if ($message !== '' && preg_match('/error|reject|invalid|rechaz|fall|deneg/', $message)) {
+            return 'ERROR';
+        }
+
+        return 'UNKNOWN';
     }
 
     private function providerMessage(array $response, string $fallback): string
@@ -456,12 +492,25 @@ class TaskController extends Controller
                 'status' => $status,
                 'http_status' => $httpStatus,
                 'message' => mb_substr($message, 0, 4000),
-                'context' => $context ?: null,
+                'context' => $context ? $this->sanitizeContext($context) : null,
             ]);
             app(\App\Services\IntegrationMailAlert::class)->handle($environment, $stage, $status, $message);
         } catch (\Throwable $exception) {
             Log::error('No se pudo registrar la bitácora de integración.', ['message' => $exception->getMessage()]);
         }
+    }
+
+    private function sanitizeContext(array $context): array
+    {
+        foreach ($context as $key => $value) {
+            if (preg_match('/token|authorization|api[_-]?key|secret|password/i', (string) $key)) {
+                $context[$key] = '[PROTEGIDO]';
+            } elseif (is_array($value)) {
+                $context[$key] = $this->sanitizeContext($value);
+            }
+        }
+
+        return $context;
     }
 
     public function checkAndSendAlerts()
