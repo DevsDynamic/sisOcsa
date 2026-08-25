@@ -152,6 +152,18 @@
             $(document).ready(function() {
                 handleTypeDocumentChange('#modal-create');
                 handleTypeDocumentChange('#modal-edit');
+
+                $('#modal-create, #modal-edit').on('change', 'select[name="type_person"]', function () {
+                    var modal = $(this).closest('.modal');
+                    var typeCode = ($(this).find(':selected').data('code') || '').toString().toLowerCase();
+                    modal.find('input[name="type"]').val(typeCode);
+                    modal.find('#contactFields').toggle(typeCode === 'co');
+                    if (typeCode !== 'co') {
+                        modal.find('#contactFields input').val('');
+                    }
+                    $(this).removeClass('is-invalid');
+                    $(this).closest('.form-group').find('.field-error').remove();
+                });
             });
 
             // Evento click para el botón "Buscar" dentro de cualquier modal
@@ -344,6 +356,10 @@
 
                 // Configurar el modal con los datos del cliente
                 var modal = $(this);
+                modal.find('#formCreateCustomer')[0].reset();
+                clearFormErrors('#formCreateCustomer');
+                modal.find('#contactFields').hide();
+                modal.find('#modalType').val('');
                 modal.find('.texttitle').text((entity).toUpperCase()); // Cambiar .text() por .val() para input
                 $('#toggleSearchContainer').addClass('hidden').hide();
                 
@@ -408,6 +424,12 @@
 
                 // Configurar el modal con los datos del cliente
                 var modal = $(this);
+                var form = modal.find('#formEditCustomer');
+                form[0].reset();
+                clearFormErrors('#formEditCustomer');
+                modal.find('#contactFields').hide();
+                modal.find('#modalType').val('');
+                modal.find('button[type="submit"]').prop('disabled', true);
                 modal.find('#hiddenIDCustomer').val(CustomerId);
                 var formattedId = 'CLI' + ('00000' + CustomerId).slice(-5);
                 modal.find('.texttitle').text((entity).toUpperCase()); // Cambiar .text() por .val() para input
@@ -424,11 +446,19 @@
                     success: function (data) {
                         console.log(data.html);
                         // Aquí llenamos el modal con los datos recibidos
-                        modal.find('#type_document').val(data.html.type_document_id).trigger('change');
-                        modal.find('#document_number').val(data.html.document_number);
-                        modal.find('#full_name').val(data.html.full_name);
-                        modal.find('#company').val(data.html.company_id).trigger('change');
-                        modal.find('#type_customer').val(data.html.type_customer_id).trigger('change');
+                        var customer = data.html;
+                        modal.find('#type_document').val(customer.type_document_id || '').trigger('change');
+                        modal.find('#document_number').val(customer.document_number || '');
+                        modal.find('#full_name').val(customer.full_name || '');
+                        modal.find('#type_person').val(customer.type_person_id || '').trigger('change');
+                        modal.find('#modalType').val((customer.type_person_code || '').toLowerCase());
+                        modal.find('#email').val(customer.email || '');
+                        modal.find('#birthdate').val(customer.birthdate || '');
+                        modal.find('#address').val(customer.address || '');
+                        modal.find('#phone_number').val(customer.phone_number || '');
+                        modal.find('#token').val(customer.token || '');
+                        modal.find('#contactFields').toggle((customer.type_person_code || '').toLowerCase() === 'co');
+                        modal.find('button[type="submit"]').prop('disabled', false);
                     },
                     error: function(xhr, status, error) {
                         console.error('Error al obtener los datos del cliente:', error);
@@ -670,21 +700,24 @@
 
             // Función para limpiar los errores del formulario EDITAR
             function clearFormErrors(form) {
-                $(form + ' .is-invalid').removeClass('is-invalid');
-                $(form + ' .text-danger').remove();
+                if (!form) return;
+                $(form).find('.is-invalid').removeClass('is-invalid');
+                $(form).find('.field-error').remove();
             }
 
             // Restablecer el formulario cuando el MODAL CREAR se oculta
             $('#modal-create').on('hidden.bs.modal', function() {
                 $('#formCreateCustomer')[0].reset();
                 $('#createErrorMessages').hide().empty();
-                clearFormErrors();
+                clearFormErrors('#formCreateCustomer');
             });
 
             // Restablecer el formulario cuando el MODAL EDITAR se oculta
             $('#modal-edit').on('hidden.bs.modal', function() {
                 $('#formEditCustomer')[0].reset();
-                clearFormErrors();
+                $('#modal-edit').find('#contactFields').hide();
+                $('#modal-edit').find('#modalType').val('');
+                clearFormErrors('#formEditCustomer');
             });
 
             // Función para mostrar los errores de validación de los formularios
@@ -692,11 +725,11 @@
                 clearFormErrors(form);
                 $.each(errors, function(key, value) {
                     var input = $( form + ' [name="' + key + '"]');
-                    var errorContainer = input.siblings('.text-danger'); // Busca el contenedor de error existente como hermano
+                    var errorContainer = input.siblings('.field-error');
 
                     // Si no encuentra un contenedor de error como hermano, busca dentro del form-group
                     if (!errorContainer.length) {
-                        errorContainer = input.closest('.form-group').find('.text-danger');
+                        errorContainer = input.closest('.form-group').find('.field-error');
                     }
 
                     // Agrega la clase is-invalid al input
@@ -708,9 +741,9 @@
                     } else {
                         // Si no existe, crea uno nuevo después del input-group
                         if (input.closest('.input-group').length) {
-                            input.closest('.input-group').after('<small class="text-danger">' + value[0] + '</small>');
+                            input.closest('.input-group').after('<small class="text-danger field-error">' + value[0] + '</small>');
                         } else {
-                            input.after('<small class="text-danger">' + value[0] + '</small>');
+                            input.after('<small class="text-danger field-error">' + value[0] + '</small>');
                         }
                     }
                 });
@@ -722,7 +755,14 @@
                     text: 'Hay errores en el formulario. Por favor, corrígelos.',
                     showConfirmButton: true
                 });
+                var firstInvalid = $(form).find('.is-invalid').first();
+                if (firstInvalid.length) firstInvalid.trigger('focus');
             }
+
+            $('#formCreateCustomer, #formEditCustomer').on('input change', 'input, select, textarea', function () {
+                $(this).removeClass('is-invalid');
+                $(this).closest('.form-group').find('.field-error').remove();
+            });
         });
     </script>
 

@@ -45,7 +45,7 @@
                 <select id="type_person" name="type_person" class="form-control" style="width: 100%" autocomplete="off">
                     <option value="">Seleccione un tipo de cliente</option>
                     @foreach($typePeople as $TypePerson)
-                        <option value="{{ $TypePerson->id }}">{{ $TypePerson->name }}</option>
+                        <option value="{{ $TypePerson->id }}" data-code="{{ strtolower($TypePerson->code) }}">{{ $TypePerson->name }}</option>
                     @endforeach
                 </select>
                 @error('type_person')

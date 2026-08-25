@@ -309,11 +309,15 @@ class PersonController extends Controller
         ];
 
         // Validar los datos del formulario
+        $request->merge([
+            'type' => strtolower((string) TypePerson::query()->whereKey($request->type_person)->value('code')),
+        ]);
+
         $validator = Validator::make($request->all(), [
             'type_document' => 'required',
             'document_number'=> 'required|unique:people|string|max:50',
             'full_name' => 'required|unique:people|string|max:255',
-            'type_person'=> 'required',
+            'type_person'=> 'required|exists:type_people,id',
             'type' => 'required|in:co,cp', // Solo se permiten cp y co
             //'email' => 'required_if:type,co|email:rfc|unique:people,email', // Obligatorio solo si type es "co"
             'email' => [
@@ -351,7 +355,7 @@ class PersonController extends Controller
     
             // Respuesta con mensaje de éxito
             return response()->json([
-                'message' => 'Cliente <strong>' . $person->full_name . '</strong> agregado exitosamente.'
+                'success' => 'Cliente <strong>' . e($person->full_name) . '</strong> agregado exitosamente.'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -427,6 +431,7 @@ class PersonController extends Controller
                                         'people.phone_number AS phone_number',
                                         'tp.name AS type_person',
                                         'tp.id AS type_person_id',
+                                        'tp.code AS type_person_code',
                                         'people.token AS token',
                                         'people.status AS status',
                                         'people.created_at AS created_date'                            
@@ -483,6 +488,10 @@ class PersonController extends Controller
         ];
 
         // Validar los datos del formulario
+        $request->merge([
+            'type' => strtolower((string) TypePerson::query()->whereKey($request->type_person)->value('code')),
+        ]);
+
         $validator = Validator::make($request->all(), [
             'type_document' => 'required',
             'document_number' => [
@@ -497,7 +506,7 @@ class PersonController extends Controller
                 'max:255',
                 Rule::unique('people', 'full_name')->ignore($person->id)
             ],
-            'type_person' => 'required',
+            'type_person' => 'required|exists:type_people,id',
             'type' => 'required|in:co,cp',
             'email' => [
                 'nullable',
@@ -533,7 +542,7 @@ class PersonController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Cliente <strong>' . $person->full_name . '</strong> actualizado exitosamente.'
+                'success' => 'Cliente <strong>' . e($person->full_name) . '</strong> actualizado exitosamente.'
             ]);
         } catch (\Exception $e) {
             return response()->json([

@@ -137,6 +137,40 @@ class SystemExperienceTest extends TestCase
             ->assertSee('1 activos · 1 inactivos');
     }
 
+    public function test_edit_customer_loads_its_type_and_update_does_not_depend_on_hidden_type(): void
+    {
+        $owner = User::factory()->create(['is_system_owner' => true]);
+        $documentType = DB::table('type_documents')->insertGetId(['name' => 'RUC', 'max_length' => 11]);
+        $personType = DB::table('type_people')->insertGetId(['code' => 'CO', 'name' => 'Contacto', 'status' => true]);
+        $customer = Person::create([
+            'type_document_id' => $documentType,
+            'type_person_id' => $personType,
+            'document_number' => '20123456789',
+            'full_name' => 'Cliente editable',
+            'email' => 'cliente@example.com',
+        ]);
+
+        $this->actingAs($owner)->getJson(route('people.edit', $customer))
+            ->assertOk()
+            ->assertJsonPath('html.type_person_id', $personType)
+            ->assertJsonPath('html.type_person_code', 'CO');
+
+        $this->actingAs($owner)->putJson(route('people.update', $customer), [
+            'type_document' => $documentType,
+            'document_number' => '20123456789',
+            'full_name' => 'Cliente actualizado',
+            'type_person' => $personType,
+            'email' => 'cliente@example.com',
+            'phone_number' => '987654321',
+        ])->assertOk()->assertJsonPath('success', 'Cliente <strong>Cliente actualizado</strong> actualizado exitosamente.');
+
+        $this->assertDatabaseHas('people', [
+            'id' => $customer->id,
+            'type_person_id' => $personType,
+            'full_name' => 'Cliente actualizado',
+        ]);
+    }
+
     public function test_profile_photo_can_be_uploaded(): void
     {
         Storage::fake('public');
