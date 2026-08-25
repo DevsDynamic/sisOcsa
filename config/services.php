@@ -12,6 +12,29 @@ return [
             'production' => env('OSINERGMIN_TOKEN_PROD'),
             'development' => env('OSINERGMIN_TOKEN_DEV'),
         ],
+        'base_urls' => [
+            'production' => env(
+                'OSINERGMIN_API_BASE_URL_PROD',
+                env('OSINERGMIN_API_BASE_URL', 'https://prod.osinergmin-agent-2021.com')
+            ),
+            'development' => env(
+                'OSINERGMIN_API_BASE_URL_DEV',
+                env('OSINERGMIN_API_BASE_URL', 'https://prod.osinergmin-agent-2021.com')
+            ),
+        ],
+        'paths' => [
+            'unit' => '/api/v1/trama',
+            'batch' => '/api/v1/trama-batch',
+        ],
+    ],
+
+    'ocsa' => [
+        'base_url' => env('OCSA_API_BASE_URL', 'https://monitoreo.ocsaperu.com'),
+        'paths' => [
+            'units' => '/api/v1/unit/list.json',
+            'companies' => '/api/v1/company/get.json',
+            'alerts' => '/api/v1/alert/list.json',
+        ],
     ],
 
     /*

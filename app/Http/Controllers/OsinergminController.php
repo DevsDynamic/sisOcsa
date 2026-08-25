@@ -44,9 +44,9 @@ class OsinergminController extends Controller
             $client_email = $client_ocsa->email ?? 'Sin correo';
 
             // API de Unidades
-            $url_units = "https://monitoreo.ocsaperu.com/api/v1/unit/list.json?key=$client_api&include[]=ignition&include[]=battery_voltage&include[]=supply_voltage";
+            $url_units = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.units');
             // API de Empresas
-            $url_companies = "https://monitoreo.ocsaperu.com/api/v1/company/get.json?key=$client_api";
+            $url_companies = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.companies');
 
             try {
                 // Consultar datos de empresas
@@ -71,7 +71,8 @@ class OsinergminController extends Controller
                 // Consultar datos de unidades
                 $response_units = $client->get($url_units, [
                     'query' => [
-                        'key' => $client_api
+                        'key' => $client_api,
+                        'include' => ['ignition', 'battery_voltage', 'supply_voltage'],
                     ]
                 ]);
                 $response_data = json_decode($response_units->getBody(), true);
@@ -218,10 +219,12 @@ class OsinergminController extends Controller
             $client = new Client();
     
             // API de Unidades
-            $url_units = "https://monitoreo.ocsaperu.com/api/v1/unit/list.json?key=$client_api";
+            $url_units = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.units');
     
             // Consultar datos de unidades
-            $response_units = $client->get($url_units);
+            $response_units = $client->get($url_units, [
+                'query' => ['key' => $client_api],
+            ]);
             $response_data = json_decode($response_units->getBody(), true);
 
             // Validar respuesta de la API

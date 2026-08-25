@@ -63,7 +63,7 @@ class ReportController extends Controller
             $client_name = $client_ocsa->full_name;
 
             // API de Unidades
-            $url_units = "https://monitoreo.ocsaperu.com/api/v1/unit/list.json?key=$client_api";
+            $url_units = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.units');
 
             try {
                 // Consultar datos de unidades

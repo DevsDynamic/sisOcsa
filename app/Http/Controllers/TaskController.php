@@ -60,7 +60,7 @@ class TaskController extends Controller
             $client_api = $client_ocsa->token;
             $client_name = $client_ocsa->full_name;
 
-            $url = 'https://monitoreo.ocsaperu.com/api/v1/unit/list.json'; // API OCSA OBTENER DATOS
+            $url = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.units');
             $apiKey = $client_api; // TOKEN
 
             //$client = new Client(); // CREAR INSTANCIA DE GUZZLE CLIENT
@@ -208,7 +208,11 @@ class TaskController extends Controller
 
                 //return $data_send;
                 // SELECCIONAR API OSINERGMIN POR BATH O UNIT
-                $urlEndpoint = ($type === "batch") ? 'https://prod.osinergmin-agent-2021.com/api/v1/trama-batch' : 'https://prod.osinergmin-agent-2021.com/api/v1/trama';
+                $osinergminBaseUrl = rtrim(
+                    config("services.osinergmin.base_urls.{$osinergmin_environment}"),
+                    '/'
+                );
+                $urlEndpoint = $osinergminBaseUrl . config("services.osinergmin.paths.{$type}");
 
                 $mihttp = new Client([
                     'timeout' => 25,
@@ -354,7 +358,7 @@ class TaskController extends Controller
             $from = '2025-03-24T00:00:00Z';
             $till = $now->format('Y-m-d\TH:i:s\Z');
 
-            $url = "https://monitoreo.ocsaperu.com/api/v1/alert/list.json";
+            $url = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.alerts');
 
             $client = new Client();
 
@@ -583,10 +587,12 @@ class TaskController extends Controller
 
         foreach ($clients as $client) {
             $client_api = $client->token;
-            $url_units = "https://monitoreo.ocsaperu.com/api/v1/unit/list.json?key=$client_api";
+            $url_units = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.units');
 
             try {
-                $response_units = $clientHttp->get($url_units);
+                $response_units = $clientHttp->get($url_units, [
+                    'query' => ['key' => $client_api],
+                ]);
                 $response_data = json_decode($response_units->getBody(), true);
 
                 if (!isset($response_data['data']['units']) || empty($response_data['data']['units'])) {
