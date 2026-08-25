@@ -24,7 +24,12 @@
         <div class="col-lg-7">
             @foreach(['development'=>'Demo / certificación','production'=>'Producción'] as $environment=>$label)
             <div class="card card-outline {{ $environment==='production' ? 'card-success':'card-warning' }}"><div class="card-header"><h3 class="card-title">Osinergmin — {{ $label }}</h3></div><div class="card-body">
-                <div class="form-group"><label>URL base</label><input name="osinergmin_base_url_{{ $environment }}" value="{{ old('osinergmin_base_url_'.$environment,$values['osinergmin_base_url_'.$environment]) }}" class="form-control"></div>
+                <div class="form-group">
+                    <label>URL base <small class="text-muted">(solo dominio, sin /api/...)</small></label>
+                    <input name="osinergmin_base_url_{{ $environment }}" value="{{ old('osinergmin_base_url_'.$environment,$values['osinergmin_base_url_'.$environment]) }}" class="form-control osinergmin-base-url" data-environment="{{ $environment }}">
+                    <small class="text-muted d-block mt-2"><strong>Trama individual:</strong> <code class="endpoint-unit"></code></small>
+                    <small class="text-muted d-block"><strong>Lote:</strong> <code class="endpoint-batch"></code></small>
+                </div>
                 <div class="form-group mb-0"><label>Token</label><div class="input-group"><input type="password" name="osinergmin_token_{{ $environment }}" class="form-control secret-field" placeholder="Déjalo vacío para conservar el actual"><div class="input-group-append"><button class="btn btn-outline-secondary toggle-secret" type="button"><i class="fas fa-eye"></i></button></div></div><small class="text-muted">Token actual configurado: {{ filled($values['osinergmin_token_'.$environment]) ? 'sí':'no' }}</small></div>
             </div></div>
             @endforeach
@@ -67,5 +72,7 @@
 <script>
 $('.toggle-secret').on('click',function(){const i=$(this).closest('.input-group').find('input');i.attr('type',i.attr('type')==='password'?'text':'password');});
 $('#test-mail-button').on('click',function(){$(this).closest('form').find('input[name="_method"]').val('POST');});
+function cleanOsinergminBase(value){return value.trim().replace(/\/$/,'').replace(/\/api-gps-ingesta(?:-batch)?(?:\/api\/v1\/(?:trama|trama-batch))?\/?$/i,'');}
+$('.osinergmin-base-url').on('input',function(){const card=$(this).closest('.card');const base=cleanOsinergminBase($(this).val());card.find('.endpoint-unit').text(base+'/api-gps-ingesta/api/v1/trama');card.find('.endpoint-batch').text(base+'/api-gps-ingesta-batch/api/v1/trama-batch');}).trigger('input');
 </script>
 @stop

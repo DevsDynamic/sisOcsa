@@ -75,6 +75,7 @@ class TaskController extends Controller
         foreach ($clients_ocsa as $client_ocsa) {
             $client_api = $client_ocsa->token;
             $client_name = $client_ocsa->full_name;
+            $resultStart = count($resu);
 
             $url = SystemConfig::ocsaBaseUrl() . config('services.ocsa.paths.units');
             $apiKey = $client_api; // TOKEN
@@ -237,8 +238,7 @@ class TaskController extends Controller
 
                 //return $data_send;
                 // SELECCIONAR API OSINERGMIN POR BATH O UNIT
-                $osinergminBaseUrl = SystemConfig::osinergminBaseUrl($osinergmin_environment);
-                $urlEndpoint = $osinergminBaseUrl . config("services.osinergmin.paths.{$type}");
+                $urlEndpoint = SystemConfig::osinergminEndpoint($osinergmin_environment, $type);
 
                 $mihttp = new Client([
                     'timeout' => 25,
@@ -350,6 +350,18 @@ class TaskController extends Controller
                         'error_message' => $error_message
                     ];
                 }
+                $clientResults = collect(array_slice($resu, $resultStart));
+                $clientErrors = $clientResults->where('status', 'ERROR')->count();
+                $clientSuccesses = $clientResults->where('status', 'SUCCESS')->count();
+                $this->integrationLog(
+                    $osinergmin_environment,
+                    'OSINERGMIN',
+                    $clientErrors > 0 ? 'ERROR' : 'SUCCESS',
+                    "Cliente {$client_name}: {$clientSuccesses} tramas aceptadas y {$clientErrors} rechazadas.",
+                    $client_ocsa->id,
+                    $estado,
+                    ['endpoint' => $urlEndpoint, 'type' => $type]
+                );
             // } catch (\Exception $e) {
             //     $resu[] = ['status' => 'ERROR', 'error_message' => $e->getMessage()];
             } catch (\Throwable $e) {
@@ -380,7 +392,7 @@ class TaskController extends Controller
             $osinergmin_environment,
             'RUN',
             $errors > 0 ? 'ERROR' : 'SUCCESS',
-            "Ejecución finalizada: {$successes} exitosos y {$errors} errores."
+            "Ejecución finalizada: {$successes} resultados exitosos y {$errors} con error; {$clients_ocsa->count()} clientes evaluados."
         );
 
         return view('welcome', compact('resu', 'Date'));

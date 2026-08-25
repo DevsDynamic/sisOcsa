@@ -46,6 +46,13 @@ class SystemSettingController extends Controller
                 continue;
             }
             $storedValue = str_contains($key, 'base_url') ? rtrim((string) $value, '/') : (string) $value;
+            if (str_starts_with($key, 'osinergmin_base_url_')) {
+                $storedValue = preg_replace(
+                    '#/api-gps-ingesta(?:-batch)?(?:/api/v1/(?:trama|trama-batch))?/?$#i',
+                    '',
+                    $storedValue
+                );
+            }
             SystemSetting::updateOrCreate(['key' => $key], ['value' => $storedValue]);
         }
 

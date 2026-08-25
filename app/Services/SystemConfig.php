@@ -18,7 +18,20 @@ class SystemConfig
 
     public static function osinergminBaseUrl(string $environment): string
     {
-        return rtrim(SystemSetting::valueFor("osinergmin_base_url_{$environment}", config("services.osinergmin.base_urls.{$environment}")), '/');
+        $url = rtrim(SystemSetting::valueFor("osinergmin_base_url_{$environment}", config("services.osinergmin.base_urls.{$environment}")), '/');
+
+        // La pantalla solicita solo el host. Si se pegó un endpoint completo,
+        // retiramos la ruta conocida para evitar duplicarla al enviar.
+        return preg_replace(
+            '#/api-gps-ingesta(?:-batch)?(?:/api/v1/(?:trama|trama-batch))?/?$#i',
+            '',
+            $url
+        );
+    }
+
+    public static function osinergminEndpoint(string $environment, string $type): string
+    {
+        return static::osinergminBaseUrl($environment).config("services.osinergmin.paths.{$type}");
     }
 
     public static function osinergminToken(string $environment): ?string
