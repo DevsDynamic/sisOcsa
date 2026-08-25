@@ -254,7 +254,61 @@ class TaskController extends Controller
 
                 $estado = $response->getStatusCode();
                 $responseBody = $response->getBody()->getContents();
+                $contentType = strtolower($response->getHeaderLine('Content-Type'));
+
+                // El WAF de PMGO puede responder HTTP 200 con una página HTML
+                // "Request Rejected". Eso no es una respuesta válida del API.
+                if (str_contains($contentType, 'text/html') || preg_match('/<html|request rejected/i', $responseBody)) {
+                    preg_match('/support\s+id\s+is\s*:\s*([0-9]+)/i', strip_tags($responseBody), $supportMatch);
+                    $supportId = $supportMatch[1] ?? null;
+                    $message = str_contains(strtolower($responseBody), 'request rejected')
+                        ? 'El firewall de Osinergmin rechazó la solicitud antes de llegar al API.'
+                        : 'PMGO respondió HTML en lugar del JSON esperado.';
+                    if ($supportId) {
+                        $message .= " Support ID: {$supportId}.";
+                    }
+
+                    $this->integrationLog(
+                        $osinergmin_environment,
+                        'WAF',
+                        'ERROR',
+                        "Cliente {$client_name}: {$message}",
+                        $client_ocsa->id,
+                        $estado,
+                        [
+                            'endpoint' => $urlEndpoint,
+                            'content_type' => $contentType,
+                            'support_id' => $supportId,
+                            'response_excerpt' => mb_substr(strip_tags($responseBody), 0, 1000),
+                        ]
+                    );
+
+                    $resu[] = [
+                        'status' => 'ERROR',
+                        'unit' => [],
+                        'response' => ['support_id' => $supportId],
+                        'bbdd' => false,
+                        'error_message' => $message,
+                    ];
+                    continue;
+                }
+
                 $resultado = json_decode($responseBody, true);
+
+                if (json_last_error() !== JSON_ERROR_NONE || ! is_array($resultado)) {
+                    $message = 'PMGO devolvió una respuesta que no es JSON válido: '.json_last_error_msg().'.';
+                    $this->integrationLog(
+                        $osinergmin_environment,
+                        'OSINERGMIN',
+                        'ERROR',
+                        "Cliente {$client_name}: {$message}",
+                        $client_ocsa->id,
+                        $estado,
+                        ['endpoint' => $urlEndpoint, 'response_excerpt' => mb_substr($responseBody, 0, 1000)]
+                    );
+                    $resu[] = ['status' => 'ERROR', 'unit' => [], 'response' => [], 'bbdd' => false, 'error_message' => $message];
+                    continue;
+                }
 
                 if ($estado < 200 || $estado >= 300) {
                     $this->integrationLog($osinergmin_environment, 'OSINERGMIN', 'ERROR', "Osinergmin respondió HTTP {$estado}: " . mb_substr($responseBody, 0, 500), $client_ocsa->id, $estado);
@@ -262,8 +316,6 @@ class TaskController extends Controller
                         "Osinergmin respondio HTTP {$estado}: " . mb_substr($responseBody, 0, 500)
                     );
                 }
-
-                $resultado = is_array($resultado) ? $resultado : [];
 
                 // Asegurar que $data_send sea un array
                 if (!is_array($data_send)) {
