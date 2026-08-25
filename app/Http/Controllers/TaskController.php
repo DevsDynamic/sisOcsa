@@ -15,7 +15,7 @@ use GuzzleHttp\Exception\RequestException;
 
 class TaskController extends Controller
 {
-    public function sendDataOsinergmin()
+    public function sendDataOsinergmin(?string $environment = null)
     {
         $lock = Cache::lock('osinergmin:send', 600);
 
@@ -29,13 +29,13 @@ class TaskController extends Controller
         }
 
         try {
-            return $this->processDataOsinergmin();
+            return $this->processDataOsinergmin($environment);
         } finally {
             $lock->release();
         }
     }
 
-    private function processDataOsinergmin()
+    private function processDataOsinergmin(?string $environment = null)
     {
         // OBTENER CLIENTES DE OCSA CON TOKEN REGISTRADO;
         $clients_ocsa = Person::operationalClients()->whereNotNull('token')
@@ -47,7 +47,11 @@ class TaskController extends Controller
         // Se usa la hora de consulta porque la fecha del proveedor GPS no es confiable.
         $Date = Carbon::now('UTC')->format('Y-m-d\TH:i:s.v\Z');
 
-        $osinergmin_environment = config('services.osinergmin.environment');
+        $osinergmin_environment = $environment ?? config('services.osinergmin.environment');
+
+        if (!in_array($osinergmin_environment, ['production', 'development'], true)) {
+            throw new \InvalidArgumentException('Ambiente de Osinergmin no valido.');
+        }
         $token_trama = config("services.osinergmin.tokens.{$osinergmin_environment}");
 
         if (empty($token_trama)) {
@@ -227,11 +231,16 @@ class TaskController extends Controller
                 ]);
 
                 $estado = $response->getStatusCode();
-                $resultado = json_decode($response->getBody()->getContents(), true);
+                $responseBody = $response->getBody()->getContents();
+                $resultado = json_decode($responseBody, true);
 
-                if ($estado < 200 || $estado >= 300 || !is_array($resultado)) {
-                    throw new \RuntimeException("Osinergmin respondio HTTP {$estado} o un JSON invalido.");
+                if ($estado < 200 || $estado >= 300) {
+                    throw new \RuntimeException(
+                        "Osinergmin respondio HTTP {$estado}: " . mb_substr($responseBody, 0, 500)
+                    );
                 }
+
+                $resultado = is_array($resultado) ? $resultado : [];
 
                 // Asegurar que $data_send sea un array
                 if (!is_array($data_send)) {
@@ -249,7 +258,7 @@ class TaskController extends Controller
                     // Verificar si $resultado contiene la clave 'data'
                     if (isset($resultado['data'])) {
                         // Si es un batch (array con múltiples elementos)
-                        $date_osinergmin = $resultado['timestamp']; // Guardar la fecha recibida
+                        $date_osinergmin = $resultado['timestamp'] ?? now()->toIso8601String();
                         if (is_array($resultado['data']) && isset($resultado['data'][$key])) {
                             $response_data = $resultado['data'][$key]; // Toma el índice correspondiente
                         } else {
@@ -257,18 +266,22 @@ class TaskController extends Controller
                             $response_data = $resultado['data'];
                         }
                     } else {
-                        $date_osinergmin = $resultado['timestamp'];
+                        $date_osinergmin = $resultado['timestamp'] ?? now()->toIso8601String();
                         // Si no existe la clave 'data', se considera una unidad
                         $response_data = $resultado;
                     }
 
                     // Verificar si $response_data tiene 'status'
-                    $status = isset($response_data['status']) ?
-                        ($response_data['status'] === 'CREATED' ? 'SUCCESS' : 'ERROR')
-                        : 'ERROR';
+                    $responseStatus = strtoupper((string) ($response_data['status'] ?? ''));
+                    $status = $estado === 202 || in_array(
+                        $responseStatus,
+                        ['CREATED', 'ACCEPTED', 'SUCCESS'],
+                        true
+                    ) ? 'SUCCESS' : 'ERROR';
 
                     // Asignar el mensaje basado en la respuesta de OSINERGMIN
-                    $response_message = $response_data['message'] ?? 'Sin mensaje de respuesta';
+                    $response_message = $response_data['message']
+                        ?? ($estado === 202 ? 'Trama aceptada por PMGO para procesamiento.' : 'Sin mensaje de respuesta');
 
                     // Establecer el mensaje de error solo si el estado es 'ERROR'
                     $error_message = ($status === 'ERROR') ? ($response_data['message'] ?? 'Sin mensaje registrado del error') : '';

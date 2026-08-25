@@ -8,6 +8,7 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::get('/send-data-osinergmin', [TaskController::class, 'sendDataOsinergmin'])
+Route::get('/send-data-osinergmin/{environment?}', [TaskController::class, 'sendDataOsinergmin'])
+    ->whereIn('environment', ['development', 'production'])
     ->middleware('throttle:1,1')
     ->name('osinergmins.send-data');

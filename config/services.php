@@ -15,16 +15,16 @@ return [
         'base_urls' => [
             'production' => env(
                 'OSINERGMIN_API_BASE_URL_PROD',
-                env('OSINERGMIN_API_BASE_URL', 'https://prod.osinergmin-agent-2021.com')
+                env('OSINERGMIN_API_BASE_URL', 'https://pmgo.osinergmin.gob.pe')
             ),
             'development' => env(
                 'OSINERGMIN_API_BASE_URL_DEV',
-                env('OSINERGMIN_API_BASE_URL', 'https://prod.osinergmin-agent-2021.com')
+                env('OSINERGMIN_API_BASE_URL', 'https://srvcertpmgo.osinergmin.gob.pe')
             ),
         ],
         'paths' => [
-            'unit' => '/api/v1/trama',
-            'batch' => '/api/v1/trama-batch',
+            'unit' => '/api-gps-ingesta/api/v1/trama',
+            'batch' => '/api-gps-ingesta-batch/api/v1/trama-batch',
         ],
     ],
 
