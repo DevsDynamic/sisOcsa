@@ -4,17 +4,31 @@ namespace App\Http\Controllers;
 
 use App\Models\IntegrationLog;
 use App\Models\Osinergmin;
+use App\Services\SystemConfig;
 
 class PublicIntegrationStatusController extends Controller
 {
     public function __invoke()
     {
         $latestRun = IntegrationLog::where('stage', 'RUN')->latest('id')->first();
-        $latestIds = Osinergmin::query()->selectRaw('MAX(id)')->whereNotNull('uuid')->groupBy('uuid');
+        $latestIds = Osinergmin::query()
+            ->selectRaw('MAX(id)')
+            ->where('environment', SystemConfig::environment())
+            ->where('created_at', '>=', now()->subDays(30))
+            ->whereNotNull('uuid')
+            ->groupBy('uuid');
         $units = Osinergmin::query()->whereIn('id', $latestIds)
-            ->select('uuid', 'plate', 'response_status', 'response_timestamp', 'created_at')
-            ->orderBy('plate')->limit(200)->get();
+            ->select('uuid', 'plate', 'response_status', 'response_message', 'response_suggestion', 'created_at')
+            ->orderByDesc('created_at')
+            ->orderBy('plate')
+            ->limit(200)->get();
 
-        return view('integration-monitor.public-status', compact('latestRun', 'units'));
+        $summary = [
+            'total' => $units->count(),
+            'success' => $units->where('response_status', 'SUCCESS')->count(),
+            'error' => $units->where('response_status', 'ERROR')->count(),
+        ];
+
+        return view('integration-monitor.public-status', compact('latestRun', 'units', 'summary'));
     }
 }

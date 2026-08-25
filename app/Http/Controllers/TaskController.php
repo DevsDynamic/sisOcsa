@@ -303,14 +303,36 @@ class TaskController extends Controller
                     ) ? 'SUCCESS' : 'ERROR';
 
                     // Asignar el mensaje basado en la respuesta de OSINERGMIN
-                    $response_message = $response_data['message']
-                        ?? ($estado === 202 ? 'Trama aceptada por PMGO para procesamiento.' : 'Sin mensaje de respuesta');
+                    $response_message = $this->providerMessage(
+                        $response_data,
+                        $estado === 202 ? 'Trama aceptada por PMGO para procesamiento.' : 'Osinergmin no devolvió un motivo descriptivo.'
+                    );
 
                     // Establecer el mensaje de error solo si el estado es 'ERROR'
-                    $error_message = ($status === 'ERROR') ? ($response_data['message'] ?? 'Sin mensaje registrado del error') : '';
+                    $error_message = $status === 'ERROR' ? $response_message : '';
 
                     // Obtener la sugerencia si está presente
-                    $response_suggestion = $response_data['suggestion'] ?? null;
+                    $response_suggestion = $response_data['suggestion'] ?? $response_data['recommendation'] ?? null;
+                    if (is_array($response_suggestion)) {
+                        $response_suggestion = json_encode($response_suggestion, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    }
+
+                    if ($status === 'ERROR') {
+                        $plate = $unit['plate'] ?? 'sin placa';
+                        $detail = "Placa {$plate}: {$response_message}";
+                        if (filled($response_suggestion)) {
+                            $detail .= " Sugerencia: {$response_suggestion}";
+                        }
+                        $this->integrationLog(
+                            $osinergmin_environment,
+                            'OSINERGMIN',
+                            'ERROR',
+                            $detail,
+                            $client_ocsa->id,
+                            $estado,
+                            ['plate' => $plate, 'endpoint' => $urlEndpoint, 'response' => $response_data]
+                        );
+                    }
 
                     if (!isset($unit['uuid'], $unit['plate'], $unit['position']['latitude'], $unit['position']['longitude'])) {
                         Log::warning("Datos incompletos recibidos de OSINERGMIN", ['unit' => $unit]);
@@ -397,6 +419,31 @@ class TaskController extends Controller
 
         return view('welcome', compact('resu', 'Date'));
         //return $resu;
+    }
+
+    private function providerMessage(array $response, string $fallback): string
+    {
+        foreach (['message', 'detail', 'description', 'reason'] as $key) {
+            if (isset($response[$key]) && is_scalar($response[$key]) && filled((string) $response[$key])) {
+                return (string) $response[$key];
+            }
+        }
+
+        if (isset($response['error'])) {
+            if (is_scalar($response['error'])) {
+                return (string) $response['error'];
+            }
+            if (is_array($response['error'])) {
+                return $this->providerMessage($response['error'], $fallback);
+            }
+        }
+
+        if (! empty($response['errors'])) {
+            return mb_substr(json_encode($response['errors'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 0, 1000);
+        }
+
+        $raw = json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return $response !== [] && $raw !== false ? mb_substr($raw, 0, 1000) : $fallback;
     }
 
     private function integrationLog(string $environment, string $stage, string $status, string $message, ?int $personId = null, ?int $httpStatus = null, array $context = []): void

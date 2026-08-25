@@ -17,6 +17,12 @@ class IntegrationMonitorController extends Controller
         $latestRun = IntegrationLog::where('stage', 'RUN')->latest('id')->first();
         $lastSuccess = IntegrationLog::where('stage', 'RUN')->where('status', 'SUCCESS')->latest('id')->first();
         $recentErrors = IntegrationLog::with('person')->where('status', 'ERROR')->latest('id')->limit(20)->get();
+        $recentRejections = Osinergmin::with('person')
+            ->where('environment', SystemConfig::environment())
+            ->where('response_status', 'ERROR')
+            ->latest('id')
+            ->limit(25)
+            ->get();
         $logs = IntegrationLog::with('person')->latest('id')->paginate(50);
         $environment = SystemConfig::environment();
         $cronStale = !$latestRun || $latestRun->created_at->lt(now()->subMinutes(5));
@@ -24,7 +30,7 @@ class IntegrationMonitorController extends Controller
         $demoRecords = Osinergmin::where('environment', 'development')->count();
         $publicStatusUrl = URL::temporarySignedRoute('integration-status.public', now()->addDay());
 
-        return view('integration-monitor.index', compact('latestRun', 'lastSuccess', 'recentErrors', 'logs', 'environment', 'cronStale', 'demoClients', 'demoRecords', 'publicStatusUrl'));
+        return view('integration-monitor.index', compact('latestRun', 'lastSuccess', 'recentErrors', 'recentRejections', 'logs', 'environment', 'cronStale', 'demoClients', 'demoRecords', 'publicStatusUrl'));
     }
 
     public function purgeDemo(Request $request)
