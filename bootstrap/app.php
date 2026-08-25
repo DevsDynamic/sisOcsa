@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->alias(['system-owner' => \App\Http\Middleware\EnsureSystemOwner::class]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

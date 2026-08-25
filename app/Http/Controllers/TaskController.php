@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use PhpParser\Node\Stmt\Return_;
 use GuzzleHttp\Exception\RequestException;
+use App\Services\SystemConfig;
+use App\Models\IntegrationLog;
 
 class TaskController extends Controller
 {
@@ -21,6 +23,7 @@ class TaskController extends Controller
 
         if (!$lock->get()) {
             Log::warning('Se omitio el envio a Osinergmin porque ya existe una ejecucion activa.');
+            $this->integrationLog($environment ?? SystemConfig::environment(), 'RUN', 'SKIPPED', 'Ejecución omitida porque otro envío conserva el bloqueo.');
 
             return response()->json([
                 'status' => 'SKIPPED',
@@ -38,33 +41,42 @@ class TaskController extends Controller
     private function processDataOsinergmin(?string $environment = null)
     {
         // OBTENER CLIENTES DE OCSA CON TOKEN REGISTRADO;
-        $clients_ocsa = Person::operationalClients()->whereNotNull('token')
-            ->where('token', '<>', '')
-            ->where('status', '1')
-            ->get();
+        $clients_ocsa = Person::activeGpsSources()->get();
 
         $resu = []; // Inicializar arreglo para almacenar resultados
         // Se usa la hora de consulta porque la fecha del proveedor GPS no es confiable.
         $Date = Carbon::now('UTC')->format('Y-m-d\TH:i:s.v\Z');
 
-        $osinergmin_environment = $environment ?? config('services.osinergmin.environment');
+        $osinergmin_environment = $environment ?? SystemConfig::environment();
 
         if (!in_array($osinergmin_environment, ['production', 'development'], true)) {
             throw new \InvalidArgumentException('Ambiente de Osinergmin no valido.');
         }
-        $token_trama = config("services.osinergmin.tokens.{$osinergmin_environment}");
+        $this->integrationLog($osinergmin_environment, 'RUN', 'STARTED', 'Ejecución de retransmisión iniciada.');
+        $token_trama = SystemConfig::osinergminToken($osinergmin_environment);
 
         if (empty($token_trama)) {
+            $this->integrationLog($osinergmin_environment, 'CONFIG', 'ERROR', "No existe token Osinergmin para {$osinergmin_environment}.");
             throw new \RuntimeException(
                 "No se ha configurado el token de Osinergmin para el ambiente {$osinergmin_environment}."
             );
+        }
+
+        if ($clients_ocsa->isEmpty()) {
+            $message = 'No hay contactos activos con un token GPS configurado.';
+            Log::warning($message);
+            $this->integrationLog($osinergmin_environment, 'OCSA', 'ERROR', $message);
+            $resu[] = [
+                'status' => 'ERROR', 'unit' => [], 'response' => [],
+                'bbdd' => false, 'error_message' => $message,
+            ];
         }
 
         foreach ($clients_ocsa as $client_ocsa) {
             $client_api = $client_ocsa->token;
             $client_name = $client_ocsa->full_name;
 
-            $url = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.units');
+            $url = SystemConfig::ocsaBaseUrl() . config('services.ocsa.paths.units');
             $apiKey = $client_api; // TOKEN
 
             //$client = new Client(); // CREAR INSTANCIA DE GUZZLE CLIENT
@@ -89,23 +101,28 @@ class TaskController extends Controller
                 $status = $response->getStatusCode();
 
                 // VALIDAR QUE OCSA RESPONDIÓ HTTP 200
-                if ($status != 200) {
+                if ($status !== 200) {
+
+                    $body = mb_substr((string) $response->getBody(), 0, 500);
+                    $this->integrationLog($osinergmin_environment, 'OCSA', 'ERROR', "OCSA respondió HTTP {$status}: {$body}", $client_ocsa->id, $status);
 
                     $resu[] = [
                         'status' => 'ERROR',
                         'unit' => [],
                         'response' => [],
                         'bbdd' => false,
-                        'error_message' => "Cliente {$client_name}: HTTP {$status}"
+                        'error_message' => "Cliente {$client_name}: OCSA respondió HTTP {$status}. {$body}"
                     ];
 
                     continue;
                 }
 
-                $response_data = json_decode($response->getBody(), true);
+                $response_data = json_decode((string) $response->getBody(), true);
 
                 // VALIDAR QUE EL JSON SEA VÁLIDO
                 if (json_last_error() !== JSON_ERROR_NONE) {
+
+                    $this->integrationLog($osinergmin_environment, 'OCSA', 'ERROR', 'OCSA devolvió una respuesta JSON inválida.', $client_ocsa->id, $status);
 
                     $resu[] = [
                         'status' => 'ERROR',
@@ -121,9 +138,11 @@ class TaskController extends Controller
                 // SI LA API DEVUELVE ERROR
                 if (isset($response_data['error'])) {
 
-                    $error_message = ($response_data['error']['msg'] === "API key does not have any associated units")
+                    $providerMessage = $response_data['error']['msg'] ?? 'Error no especificado por OCSA';
+                    $error_message = ($providerMessage === "API key does not have any associated units")
                         ? "Cliente {$client_name}: no tiene unidades registradas."
-                        : "Cliente {$client_name}: {$response_data['error']['msg']}";
+                        : "Cliente {$client_name}: {$providerMessage}";
+                    $this->integrationLog($osinergmin_environment, 'OCSA', 'ERROR', $error_message, $client_ocsa->id, $status);
 
                     $resu[] = [
                         'status' => 'ERROR',
@@ -195,6 +214,12 @@ class TaskController extends Controller
                     Log::warning('El proveedor GPS no devolvio unidades procesables.', [
                         'cliente' => $client_name,
                     ]);
+                    $this->integrationLog($osinergmin_environment, 'OCSA', 'WARNING', "Cliente {$client_name}: no se recibieron unidades procesables.", $client_ocsa->id);
+                    $resu[] = [
+                        'status' => 'ERROR', 'unit' => [], 'response' => $response_data,
+                        'bbdd' => false,
+                        'error_message' => "Cliente {$client_name}: OCSA no devolvió unidades procesables.",
+                    ];
                     continue;
                 }
 
@@ -212,10 +237,7 @@ class TaskController extends Controller
 
                 //return $data_send;
                 // SELECCIONAR API OSINERGMIN POR BATH O UNIT
-                $osinergminBaseUrl = rtrim(
-                    config("services.osinergmin.base_urls.{$osinergmin_environment}"),
-                    '/'
-                );
+                $osinergminBaseUrl = SystemConfig::osinergminBaseUrl($osinergmin_environment);
                 $urlEndpoint = $osinergminBaseUrl . config("services.osinergmin.paths.{$type}");
 
                 $mihttp = new Client([
@@ -235,6 +257,7 @@ class TaskController extends Controller
                 $resultado = json_decode($responseBody, true);
 
                 if ($estado < 200 || $estado >= 300) {
+                    $this->integrationLog($osinergmin_environment, 'OSINERGMIN', 'ERROR', "Osinergmin respondió HTTP {$estado}: " . mb_substr($responseBody, 0, 500), $client_ocsa->id, $estado);
                     throw new \RuntimeException(
                         "Osinergmin respondio HTTP {$estado}: " . mb_substr($responseBody, 0, 500)
                     );
@@ -297,6 +320,8 @@ class TaskController extends Controller
                     // Intentar almacenar en la base de datos
                     try {
                         Osinergmin::create([
+                            'person_id' => $client_ocsa->id,
+                            'environment' => $osinergmin_environment,
                             'uuid' => $unit['uuid'],
                             'plate' => $unit['plate'],
                             'event' => $unit['event'],
@@ -336,6 +361,7 @@ class TaskController extends Controller
                     'linea' => $e->getLine(),
                     'trace' => $e->getTraceAsString()
                 ]);
+                $this->integrationLog($osinergmin_environment, 'PROCESS', 'ERROR', "Cliente {$client_name}: {$e->getMessage()}", $client_ocsa->id);
 
                 $resu[] = [
                     'status' => 'ERROR',
@@ -348,8 +374,35 @@ class TaskController extends Controller
                 continue;
             }
         }
+        $errors = collect($resu)->where('status', 'ERROR')->count();
+        $successes = collect($resu)->where('status', 'SUCCESS')->count();
+        $this->integrationLog(
+            $osinergmin_environment,
+            'RUN',
+            $errors > 0 ? 'ERROR' : 'SUCCESS',
+            "Ejecución finalizada: {$successes} exitosos y {$errors} errores."
+        );
+
         return view('welcome', compact('resu', 'Date'));
         //return $resu;
+    }
+
+    private function integrationLog(string $environment, string $stage, string $status, string $message, ?int $personId = null, ?int $httpStatus = null, array $context = []): void
+    {
+        try {
+            IntegrationLog::create([
+                'person_id' => $personId,
+                'environment' => $environment,
+                'stage' => $stage,
+                'status' => $status,
+                'http_status' => $httpStatus,
+                'message' => mb_substr($message, 0, 4000),
+                'context' => $context ?: null,
+            ]);
+            app(\App\Services\IntegrationMailAlert::class)->handle($environment, $stage, $status, $message);
+        } catch (\Throwable $exception) {
+            Log::error('No se pudo registrar la bitácora de integración.', ['message' => $exception->getMessage()]);
+        }
     }
 
     public function checkAndSendAlerts()
@@ -371,7 +424,7 @@ class TaskController extends Controller
             $from = '2025-03-24T00:00:00Z';
             $till = $now->format('Y-m-d\TH:i:s\Z');
 
-            $url = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.alerts');
+            $url = SystemConfig::ocsaBaseUrl() . config('services.ocsa.paths.alerts');
 
             $client = new Client();
 
@@ -441,7 +494,7 @@ class TaskController extends Controller
     // {
     //     $client = new Client();
     //     $apiUrl = 'https://graph.facebook.com/v22.0/535460832993968/messages';
-    //     $apiToken = 'EAAOi1JftaOkBOwvFQkIvlKwNtnaBqGhcNBpL2wOd7MH7hGNlRr3PjMK3NbEaoZC5VAbes0gHoRrxk5RuvFSMt8lrbqMq5Swc4KbH2UAE5SZBNEtGLp9qMu8i8UEz602PzrDgdZCJVsX8LWW1g3ZA3AyKtHHLkqNsRyHGHmupcwZBKHrKt4pWjPj2qSwqLOKHNwFh6BhKGix2LeLsp7MZC3oSNSUWxW'; // Reemplaza con tu token de acceso de Meta
+    //     $apiToken = config('services.whatsapp.token');
 
     //     try {
     //         // Mensaje usando plantilla (en tu caso 'hello_world')
@@ -474,7 +527,7 @@ class TaskController extends Controller
     // {
     //     $client = new Client();
     //     $apiUrl = 'https://graph.facebook.com/v22.0/535460832993968/messages';
-    //     $apiToken = 'EAAOi1JftaOkBOwvFQkIvlKwNtnaBqGhcNBpL2wOd7MH7hGNlRr3PjMK3NbEaoZC5VAbes0gHoRrxk5RuvFSMt8lrbqMq5Swc4KbH2UAE5SZBNEtGLp9qMu8i8UEz602PzrDgdZCJVsX8LWW1g3ZA3AyKtHHLkqNsRyHGHmupcwZBKHrKt4pWjPj2qSwqLOKHNwFh6BhKGix2LeLsp7MZC3oSNSUWxW'; // Reemplaza con tu token de acceso de Meta
+    //     $apiToken = config('services.whatsapp.token');
 
     //     try {
     //         // Mensaje usando plantilla (en tu caso 'hello_world')
@@ -526,8 +579,13 @@ class TaskController extends Controller
     public function sendWhatsAppMessage($phoneNumber, $message)
     {
         $client = new Client();
-        $apiUrl = 'https://graph.facebook.com/v22.0/535460832993968/messages';
-        $apiToken = 'EAAOi1JftaOkBOwvFQkIvlKwNtnaBqGhcNBpL2wOd7MH7hGNlRr3PjMK3NbEaoZC5VAbes0gHoRrxk5RuvFSMt8lrbqMq5Swc4KbH2UAE5SZBNEtGLp9qMu8i8UEz602PzrDgdZCJVsX8LWW1g3ZA3AyKtHHLkqNsRyHGHmupcwZBKHrKt4pWjPj2qSwqLOKHNwFh6BhKGix2LeLsp7MZC3oSNSUWxW'; // Reemplaza con tu token de acceso de Meta
+        $apiUrl = config('services.whatsapp.api_url');
+        $apiToken = config('services.whatsapp.token');
+
+        if (empty($apiUrl) || empty($apiToken)) {
+            Log::warning('WhatsApp no está configurado; se omitió el envío.');
+            return;
+        }
 
         try {
             // Mensaje usando plantilla (en tu caso 'hello_world')
@@ -600,7 +658,7 @@ class TaskController extends Controller
 
         foreach ($clients as $client) {
             $client_api = $client->token;
-            $url_units = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.units');
+            $url_units = SystemConfig::ocsaBaseUrl() . config('services.ocsa.paths.units');
 
             try {
                 $response_units = $clientHttp->get($url_units, [

@@ -18,7 +18,10 @@
     @php( $password_reset_url = $password_reset_url ? url($password_reset_url) : '' )
 @endif
 
-@section('auth_header', __('adminlte::adminlte.login_message'))
+@section('auth_header')
+    <strong>Bienvenido</strong>
+    <small class="d-block text-muted mt-1">Accede al centro de retransmisión GPS</small>
+@stop
 
 @section('auth_body')
     <form action="{{ $login_url }}" method="post">
@@ -26,8 +29,8 @@
 
         {{-- Username field --}}
         <div class="input-group mb-3">
-            <input type="username" name="username" class="form-control @error('username') is-invalid @enderror"
-                   value="{{ old('username') }}" placeholder="Usuario" autofocus>
+            <input type="email" name="username" class="form-control @error('username') is-invalid @enderror"
+                   value="{{ old('username') }}" placeholder="Correo electrónico" autofocus autocomplete="username" required>
 
             <div class="input-group-append">
                 <div class="input-group-text">
@@ -44,13 +47,11 @@
 
         {{-- Password field --}}
         <div class="input-group mb-3">
-            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
-                   placeholder="{{ __('adminlte::adminlte.password') }}">
+            <input id="login-password" type="password" name="password" class="form-control @error('password') is-invalid @enderror"
+                   placeholder="{{ __('adminlte::adminlte.password') }}" autocomplete="current-password" required>
 
             <div class="input-group-append">
-                <div class="input-group-text">
-                    <span class="fas fa-lock {{ config('adminlte.classes_auth_icon', '') }}"></span>
-                </div>
+                <button type="button" class="input-group-text border-0 toggle-password" data-target="#login-password" aria-label="Mostrar contraseña"><span class="fas fa-eye {{ config('adminlte.classes_auth_icon', '') }}"></span></button>
             </div>
 
             @error('password')
@@ -93,12 +94,8 @@
         </p>
     @endif
 
-    {{-- Register link --}}
-    @if($register_url)
-        <p class="my-0">
-            <a href="{{ $register_url }}">
-                {{ __('adminlte::adminlte.register_a_new_membership') }}
-            </a>
-        </p>
-    @endif
+@stop
+
+@section('js')
+<script>$('.toggle-password').on('click',function(){const input=$($(this).data('target'));const show=input.attr('type')==='password';input.attr('type',show?'text':'password');$(this).find('span').toggleClass('fa-eye fa-eye-slash');});</script>
 @stop

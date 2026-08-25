@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Osinergmin;
+use App\Models\IntegrationLog;
 use Illuminate\Console\Command;
 
 class PruneOsinergminData extends Command
@@ -36,6 +37,10 @@ class PruneOsinergminData extends Command
         } while ($deleted < $limit);
 
         $this->info("Se eliminaron {$deleted} retransmisiones anteriores a {$cutoff->toDateTimeString()}.");
+
+        $logIds = IntegrationLog::where('created_at', '<', $cutoff)->orderBy('id')->limit($limit)->pluck('id');
+        $deletedLogs = IntegrationLog::whereIn('id', $logIds)->delete();
+        $this->info("Se eliminaron {$deletedLogs} eventos antiguos de la bitácora.");
 
         return self::SUCCESS;
     }

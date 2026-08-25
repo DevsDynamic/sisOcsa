@@ -64,6 +64,16 @@
 
     {{-- Custom Stylesheets (post AdminLTE) --}}
     @yield('adminlte_css')
+    @auth
+        <style>
+            .global-environment-badge{position:fixed;top:9px;right:240px;z-index:1040;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.06em;box-shadow:0 3px 12px rgba(0,0,0,.12)}
+            .global-environment-badge.demo{background:#ffc107;color:#332701}.global-environment-badge.production{background:#28a745;color:#fff}.global-environment-badge:hover{color:inherit;text-decoration:none;transform:translateY(-1px)}
+            .content-wrapper{background:#f4f7fb}.card{border-radius:12px}.btn{border-radius:8px}.main-sidebar{box-shadow:4px 0 18px rgba(0,0,0,.08)!important}
+            @media(max-width:767px){
+                .global-environment-badge{top:auto;right:14px;bottom:14px;font-size:9px;padding:7px 10px;z-index:1050}
+            }
+        </style>
+    @endauth
 
     {{-- Favicon --}}
     @if(config('adminlte.use_ico_only'))
@@ -103,6 +113,19 @@
 
 
 <body class="@yield('classes_body')" @yield('body_data')>
+
+    @auth
+        @php($globalEnvironment = \App\Services\SystemConfig::environment())
+        @if(auth()->user()->is_system_owner)
+            <a href="{{ route('system-settings.edit') }}" class="global-environment-badge {{ $globalEnvironment === 'production' ? 'production' : 'demo' }}" title="Cambiar ambiente">
+                <i class="fas fa-circle mr-1"></i>{{ $globalEnvironment === 'production' ? 'PRODUCCIÓN' : 'DEMO' }}
+            </a>
+        @else
+            <div class="global-environment-badge {{ $globalEnvironment === 'production' ? 'production' : 'demo' }}">
+                <i class="fas fa-circle mr-1"></i>{{ $globalEnvironment === 'production' ? 'PRODUCCIÓN' : 'DEMO' }}
+            </div>
+        @endif
+    @endauth
 
     {{-- Body Content --}}
     @yield('body')

@@ -18,14 +18,22 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TypeCustomerController;
 use App\Http\Controllers\TypePersonController;
 use App\Http\Controllers\WhatsAppController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SystemSettingController;
+use App\Http\Controllers\IntegrationMonitorController;
+use App\Http\Controllers\PublicIntegrationStatusController;
 
     Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('login', [LoginController::class, 'login']);
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::get('/', function () {
-    return view('auth.login');
+    return auth()->check() ? redirect()->route('dashboard.index') : redirect()->route('login');
 });
+
+Route::get('estado-integracion', PublicIntegrationStatusController::class)
+    ->middleware(['signed', 'throttle:30,1'])
+    ->name('integration-status.public');
 
 // Rutas protegidas por autenticación
 Route::middleware([
@@ -37,6 +45,19 @@ Route::middleware([
     //     return view('dashboard');
     // })->name('dashboard');
     Route::resource('dashboard', DashboardController::class)->names('dashboard');
+    Route::get('mi-perfil', [ProfileController::class, 'edit'])->name('profile.account');
+    Route::put('mi-perfil', [ProfileController::class, 'update'])->name('profile.account.update');
+    Route::put('mi-perfil/password', [ProfileController::class, 'password'])->name('profile.account.password');
+    Route::post('mi-perfil/foto', [ProfileController::class, 'photo'])->name('profile.account.photo');
+    Route::get('mi-perfil/foto', [ProfileController::class, 'photoContent'])->name('profile.account.photo.show');
+    Route::middleware('system-owner')->group(function () {
+        Route::get('administracion/configuracion', [SystemSettingController::class, 'edit'])->name('system-settings.edit');
+        Route::put('administracion/configuracion', [SystemSettingController::class, 'update'])->name('system-settings.update');
+        Route::post('administracion/configuracion/probar-correo', [SystemSettingController::class, 'testMail'])->name('system-settings.test-mail');
+        Route::get('administracion/monitor', [IntegrationMonitorController::class, 'index'])->name('integration-monitor.index');
+        Route::post('administracion/monitor/enviar', [IntegrationMonitorController::class, 'sendNow'])->name('integration-monitor.send-now');
+        Route::delete('administracion/datos-demo', [IntegrationMonitorController::class, 'purgeDemo'])->name('integration-monitor.purge-demo');
+    });
 
     //USERS//USUARIOS
     Route::resource('users', UserController::class)->names('users');
@@ -79,7 +100,7 @@ Route::middleware([
     Route::resource('osinergmins', OsinergminController::class)->names('osinergmins'); //
     Route::get('osinergmins.index-table', [OsinergminController::class, 'indexTable'])->name('osinergmins.index-table');
     Route::get('osinergmins.index-units', [OsinergminController::class, 'indexUnits'])->name('osinergmins.index-units');
-    Route::get('osinergmins.index-units/data', [OsinergminController::class, 'indexTableUnits'])->name('osinergmins.index-units-data');
+    Route::get('osinergmins.index-units/data', [OsinergminController::class, 'indexTableUnitsV2'])->name('osinergmins.index-units-data');
     Route::get('/osinergmin-retransmission/{id}', [OsinergminController::class, 'retransmissionUnits'])->name('osinergmin-retransmission');
 
     Route::resource('reports', ReportController::class)->names('reports');

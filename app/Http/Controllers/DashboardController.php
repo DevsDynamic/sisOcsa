@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Person;
+use App\Models\Osinergmin;
+use App\Services\SystemConfig;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -12,11 +15,19 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $co = Person::operationalClients()->where('type_person_id', 1)->count();
-        $cp = Person::operationalClients()->where('type_person_id', 2)->count();
-        $personToken = Person::operationalClients()->whereNotNull('token')->where('token', '!=', '')->count();
+        $clients = Person::operationalClients()->count();
+        $gpsSources = Person::activeGpsSources()->count();
+        $today = Osinergmin::whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])->count();
+        $errorsToday = Osinergmin::whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])->where('response_status', 'ERROR')->count();
+        $lastTransmission = Osinergmin::latest('id')->first();
+        $daily = Osinergmin::query()->selectRaw('DATE(created_at) day, COUNT(*) total, SUM(response_status = ?) success', ['SUCCESS'])
+            ->where('created_at', '>=', now()->subDays(6)->startOfDay())->groupBy(DB::raw('DATE(created_at)'))->orderBy('day')->get();
+        $environment = SystemConfig::environment();
 
-        return view('dashboard', compact('co', 'cp', 'personToken'));
+        $todayReportUrl = route('reports.osinergmin', ['from' => now()->toDateString(), 'to' => now()->toDateString()]);
+        $todayErrorsUrl = route('reports.osinergmin', ['from' => now()->toDateString(), 'to' => now()->toDateString(), 'status' => 'ERROR']);
+
+        return view('dashboard', compact('clients', 'gpsSources', 'today', 'errorsToday', 'lastTransmission', 'daily', 'environment', 'todayReportUrl', 'todayErrorsUrl'));
     }
 
     /**

@@ -22,4 +22,13 @@ class Person extends Model
             $userQuery->where('is_system_owner', true);
         });
     }
+
+    public function scopeActiveGpsSources($query)
+    {
+        return $query
+            ->operationalClients()
+            ->where('status', true)
+            ->whereNotNull('token')
+            ->where('token', '<>', '');
+    }
 }

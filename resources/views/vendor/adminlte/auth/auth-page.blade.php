@@ -17,6 +17,10 @@
 @endphp
 
 @section('adminlte_css')
+    <style>
+        .login-page,.register-page{background:linear-gradient(135deg,rgba(7,28,54,.96),rgba(10,101,157,.88)),url('{{ asset('image/logo_ocsa.png') }}') center/540px no-repeat fixed;}
+        .login-box,.register-box{width:410px;max-width:92vw}.login-logo img,.register-logo img{filter:drop-shadow(0 8px 18px rgba(0,0,0,.25));background:#fff;padding:5px}.login-logo a,.register-logo a{color:#fff}.login-card-body,.register-card-body{padding:28px}.card{border-radius:18px;overflow:hidden}.form-control{height:46px}.input-group-text{min-width:46px;justify-content:center}.card-footer{background:#fff!important}
+    </style>
     @stack('css')
     @yield('css')
 @stop

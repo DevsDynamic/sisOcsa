@@ -2,186 +2,103 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\OsinergminExport;
 use App\Models\Osinergmin;
-use App\Models\Person;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use GuzzleHttp\Client;
-//use DataTables;
-use Yajra\DataTables\Facades\DataTables;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
-use App\Exports\OsinergminExport;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
+use Yajra\DataTables\Facades\DataTables;
 
 class ReportController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        return view('reports.index');
+        return redirect()->route('reports.osinergmin');
     }
 
     public function getRetransmissionsReport(Request $request)
     {
-        // Validar fechas
-        $request->validate([
-            'from' => 'required|date',
-            'to' => 'required|date|after_or_equal:from',
-        ]);
+        [$from, $to] = $this->validatedRange($request);
 
-        // Convertir las fechas a formato Carbon
-        $from = Carbon::parse($request->from)->startOfDay();
-        $to = Carbon::parse($request->to)->endOfDay();
+        $retransmissions = Osinergmin::query()
+            ->whereBetween('created_at', [$from, $to])
+            ->latest('id')
+            ->limit(500)
+            ->get();
 
-        // Obtener datos de retransmisiones en el rango de fechas
-        $retransmissions = Osinergmin::whereBetween('created_at', [$from, $to])->get();
-
-        // Generar la vista parcial con los datos
-        $html = view('partials.retransmissions_report', compact('retransmissions'))->render();
+        $html = view('reports.partials.retransmissions_report', compact('retransmissions'))->render();
 
         return response()->json(['html' => $html]);
     }
 
     public function reportOsinergmin()
     {
-        // Obtener clientes con token registrado y activo
-        $clients_ocsa = Person::operationalClients()->whereNotNull('token')
-            ->where('token', '<>', '')
-            ->where('status', '1')
-            ->get();
-
-        $client = new Client(); // Instancia de Guzzle
-        $grouped_data = []; // Agrupación de unidades por cliente
-        $unitOptions = []; // Arreglo con los datos de uuid y plate
-
-        foreach ($clients_ocsa as $client_ocsa) {
-            $client_api = $client_ocsa->token;
-            $client_name = $client_ocsa->full_name;
-
-            // API de Unidades
-            $url_units = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.units');
-
-            try {
-                // Consultar datos de unidades
-                $response_units = $client->get($url_units, [
-                    'query' => ['key' => $client_api]
-                ]);
-                $response_data = json_decode($response_units->getBody(), true);
-
-                if (!isset($response_data['data']['units'])) {
-                    continue;
-                }
-
-                // Recorrer unidades y agregar al array de opciones
-                foreach ($response_data['data']['units'] as $unit) {
-                    $unitOptions[] = [
-                        'id' => $unit['unit_id'] ?? null,  // UUID de la unidad
-                        'plate' => $unit['number'] ?? 'Desconocido' // Placa
-                    ];
-                }
-            } catch (\Exception $e) {
-                // En caso de error en la API, continuar con el siguiente cliente
-                continue;
-            }
-        }
+        // El reporte se alimenta de la base local y no se bloquea si OCSA cae.
+        $unitOptions = Osinergmin::query()
+            ->select('uuid', 'plate')
+            ->whereNotNull('uuid')
+            ->where('uuid', '<>', '')
+            ->distinct()
+            ->orderBy('plate')
+            ->get()
+            ->map(fn (Osinergmin $row) => [
+                'id' => $row->uuid,
+                'plate' => $row->plate ?: $row->uuid,
+            ]);
 
         return view('reports.osinergmin', compact('unitOptions'));
     }
 
     public function viewReportOsinergmin(Request $request)
     {
-        $from = $request->from ?: date('Y-m-d');
-        $to   = $request->to   ?: date('Y-m-d');
+        [$from, $to] = $this->validatedRange($request);
 
-        $query = Osinergmin::select(
-            'id',
-            'uuid',
-            'plate',
-            'event',
-            'speed',
-            'latitude',
-            'longitude',
-            'gpsDate',
-            'odometer',
-            'response_timestamp',
-            'response_message',
-            'response_suggestion',
-            'response_status',
-            'created_at',
-            'updated_at'
-        )
-            ->whereBetween('response_timestamp', [$from, $to])
-            ->orderBy('id', 'DESC');
+        $query = Osinergmin::query()
+            ->select([
+                'id', 'uuid', 'plate', 'event', 'speed', 'latitude', 'longitude',
+                'gpsDate', 'odometer', 'response_timestamp', 'response_message',
+                'response_suggestion', 'response_status', 'created_at', 'updated_at',
+            ])
+            ->whereBetween('created_at', [$from, $to])
+            ->when($request->filled('unit'), fn ($query) => $query->where('uuid', $request->string('unit')))
+            ->when($request->filled('status'), fn ($query) => $query->where('response_status', $request->string('status')))
+            ->orderByDesc('id');
 
-        // Filtro opcional por unidad (uuid)
-        if (!empty($request->unit)) {
-            $query->where('uuid', $request->unit);
-        }
-
-        return DataTables::of($query)
+        return DataTables::eloquent($query)
             ->addIndexColumn()
+            ->editColumn('gpsDate', fn (Osinergmin $row) => $row->gpsDate ?: '-')
+            ->editColumn('response_timestamp', fn (Osinergmin $row) => $row->response_timestamp ?: '-')
             ->make(true);
     }
 
     public function exportOsinergmin(Request $request)
     {
-        $unit = $request->unit ?? null;
+        [$from, $to] = $this->validatedRange($request);
+        $unit = $request->filled('unit') ? $request->string('unit')->toString() : null;
+        $status = $request->filled('status') ? $request->string('status')->toString() : null;
 
-        $from = $request->from ?: date('Y-m-d');
-        $to   = $request->to   ?: date('Y-m-d');
-
-        return Excel::download(new OsinergminExport($unit, $from, $to), 'osinergmin.xlsx');
+        return Excel::download(new OsinergminExport($unit, $from, $to, $status), 'osinergmin.xlsx');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    private function validatedRange(Request $request): array
     {
-        //
-    }
+        $validated = $request->validate([
+            'from' => ['required', 'date_format:Y-m-d'],
+            'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'unit' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'in:SUCCESS,ERROR'],
+        ]);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        $from = Carbon::createFromFormat('Y-m-d', $validated['from'])->startOfDay();
+        $to = Carbon::createFromFormat('Y-m-d', $validated['to'])->endOfDay();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        if ($from->diffInDays($to) > 31) {
+            throw ValidationException::withMessages([
+                'to' => 'El rango máximo permitido es de 31 días.',
+            ]);
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return [$from, $to];
     }
 }

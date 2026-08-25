@@ -13,6 +13,7 @@ use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Services\SystemConfig;
 
 class OsinergminController extends Controller
 {
@@ -44,9 +45,9 @@ class OsinergminController extends Controller
             $client_email = $client_ocsa->email ?? 'Sin correo';
 
             // API de Unidades
-            $url_units = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.units');
+            $url_units = SystemConfig::ocsaBaseUrl() . config('services.ocsa.paths.units');
             // API de Empresas
-            $url_companies = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.companies');
+            $url_companies = SystemConfig::ocsaBaseUrl() . config('services.ocsa.paths.companies');
 
             try {
                 // Consultar datos de empresas
@@ -79,9 +80,10 @@ class OsinergminController extends Controller
 
                 // Si la API devuelve un error
                 if (!is_array($response_data) || isset($response_data['error'])) {
-                    $error_message = ($response_data['error']['msg'] === "API key does not have any associated units")
-                        ? "El cliente '$client_name' con token '$client_api' no tiene unidades registradas."
-                        : $response_data['error']['msg'];
+                    $providerMessage = $response_data['error']['msg'] ?? 'Error no especificado por OCSA';
+                    $error_message = ($providerMessage === "API key does not have any associated units")
+                        ? "El cliente '$client_name' no tiene unidades registradas."
+                        : $providerMessage;
 
                     // Registrar el error en el array de respuesta
                     $response_result[] = [
@@ -105,9 +107,9 @@ class OsinergminController extends Controller
                 }
 
                 // Inicializar el cliente en grouped_data si no existe
-                if (!isset($grouped_data[$client_api])) {
-                    $grouped_data[$client_api] = [
-                        'token' => $client_api,
+                if (!isset($grouped_data[$client_ocsa->id])) {
+                    $grouped_data[$client_ocsa->id] = [
+                        'client_id' => $client_ocsa->id,
                         'nombre_cliente' => $client_name,
                         'correo' => $client_email,
                         'empresa' => $companies_info, // Asociamos la empresa directamente
@@ -122,7 +124,7 @@ class OsinergminController extends Controller
                     }
 
                     // Agregar unidad al cliente
-                    $grouped_data[$client_api]['units'][] = [
+                    $grouped_data[$client_ocsa->id]['units'][] = [
                         'uuid' => $unit['unit_id'] ?? null,
                         'plate' => $unit['number'] ?? 'Desconocido', // Placa
                         'name_unit' => $unit['label'] ?? '', // Nombre de la unidad
@@ -149,12 +151,11 @@ class OsinergminController extends Controller
                         ->addColumn('action', function ($data_unit) {
                             $buttons = '';
 
-                            // Obtener el token desde la clave del array
-                            $client_token = $data_unit['token'] ?? null; // Esto obtiene el token que es la clave del array
+                            $clientId = $data_unit['client_id'] ?? null;
 
                             // Ver cliente
                             if (auth()->user()->can('people.show')) {
-                                $buttons .= '<a href="" data-target="#modal-show" data-toggle="modal" data-id="' . $client_token . '">
+                                $buttons .= '<a href="" data-target="#modal-show" data-toggle="modal" data-id="' . $clientId . '">
                                                 <button class="btn btn-info btn-sm mr-1 mb-1" title="Ver cliente">
                                                     <i class="fas fa-eye"></i> Ver
                                                 </button>
@@ -162,7 +163,7 @@ class OsinergminController extends Controller
                             }
                             // editar cliente
                             if (auth()->user()->can('people.edit')) {
-                                $buttons .= '<a href="" data-target="#modal-edit" data-toggle="modal" data-id="' . $client_token . '">
+                                $buttons .= '<a href="" data-target="#modal-edit" data-toggle="modal" data-id="' . $clientId . '">
                                                 <button class="btn btn-warning btn-sm mr-1 mb-1" title="Editar cliente">
                                                     <i class="fas fa-edit"></i> Editar
                                                 </button>
@@ -170,7 +171,7 @@ class OsinergminController extends Controller
                             }
                             // Cambiar estado del cliente (activar/inactivar)
                             if (auth()->user()->can('people.change_status')) {                                    
-                                $buttons .= '<a href="" data-target="#modal-change-status" data-toggle="modal" data-id="' . $client_token . '" data-status="inactivar">
+                                $buttons .= '<a href="" data-target="#modal-change-status" data-toggle="modal" data-id="' . $clientId . '" data-status="inactivar">
                                                 <button class="btn btn-sm mr-1 mb-1 btn-danger" title="Inactivar cliente">
                                                     <i class="fas fa-times-circle"></i> Inactivar
                                                 </button>
@@ -219,7 +220,7 @@ class OsinergminController extends Controller
             $client = new Client();
     
             // API de Unidades
-            $url_units = rtrim(config('services.ocsa.base_url'), '/') . config('services.ocsa.paths.units');
+            $url_units = SystemConfig::ocsaBaseUrl() . config('services.ocsa.paths.units');
     
             // Consultar datos de unidades
             $response_units = $client->get($url_units, [
@@ -274,6 +275,56 @@ class OsinergminController extends Controller
                         })
                         ->rawColumns(['action'])
                         ->make(true);
+    }
+
+    public function indexTableUnitsV2()
+    {
+        $units = [];
+        $errors = [];
+
+        try {
+            $user = Auth::user();
+            $sources = $user->is_system_owner
+                ? Person::activeGpsSources()->get()
+                : Person::query()->where('user_id', $user->id)->activeGpsSources()->get();
+
+            if ($sources->isEmpty()) {
+                return DataTables::of(collect())->with('notice', 'No hay un cliente activo con token OCSA configurado.')->make(true);
+            }
+
+            $client = new Client(['timeout' => 20, 'connect_timeout' => 10, 'http_errors' => false]);
+            $url = SystemConfig::ocsaBaseUrl() . config('services.ocsa.paths.units');
+
+            foreach ($sources as $source) {
+                $response = $client->get($url, ['query' => ['key' => $source->token]]);
+                $body = json_decode((string) $response->getBody(), true);
+
+                if ($response->getStatusCode() !== 200 || isset($body['error'])) {
+                    $errors[] = $source->full_name . ': ' . ($body['error']['msg'] ?? 'HTTP '.$response->getStatusCode());
+                    continue;
+                }
+
+                foreach ($body['data']['units'] ?? [] as $unit) {
+                    $units[] = [
+                        'uuid' => $unit['unit_id'] ?? null,
+                        'plate' => $unit['number'] ?? 'Desconocido',
+                        'name_unit' => $unit['label'] ?? '',
+                        'mileage' => $unit['mileage'] ?? 0,
+                        'last_update' => $unit['last_update'] ?? '',
+                        'client_name' => $source->full_name,
+                    ];
+                }
+            }
+        } catch (\Throwable $exception) {
+            $errors[] = 'Error al obtener unidades: '.$exception->getMessage();
+        }
+
+        return DataTables::of(collect($units))
+            ->addIndexColumn()
+            ->addColumn('action', fn ($unit) => '<button class="btn btn-sm btn-info show-unit" data-id="'.e($unit['uuid']).'" data-plate="'.e($unit['plate']).'"><i class="fas fa-eye"></i> Ver</button>')
+            ->rawColumns(['action'])
+            ->with('notice', implode(' | ', $errors))
+            ->make(true);
     }
 
     public function create()

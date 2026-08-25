@@ -42,7 +42,7 @@ class PersonController extends Controller
                                     'people.birthdate AS birthdate',
                                     'people.address AS address',
                                     'people.email AS email',
-                                    'people.profile_photo_path AS profile_photo_path',
+                                    'u.profile_photo_path AS profile_photo_path',
                                     'tp.name AS type_person',
                                     'people.token AS token',
                                     'people.status AS status',
@@ -52,9 +52,9 @@ class PersonController extends Controller
                                 ->where(fn ($visible) => $visible
                                     ->whereNull('u.id')
                                     ->orWhere('u.is_system_owner', false)))
-                            ->get();
+                            ;
 
-        return Datatables::of($people)
+        return Datatables::eloquent($people)
                         ->addIndexColumn()
                         ->addColumn('action', function ($person) {
                             $buttons = '';

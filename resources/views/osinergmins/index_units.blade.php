@@ -9,11 +9,13 @@
 @section('content')
     <div class="card">
         <div class="card-body">
+            <div id="units-notice" class="alert alert-warning d-none"></div>
             <table id="tablaPrincipal" class="table table-striped table-centered">
                 <thead>
                     <tr>
                         <th scope="col">N°</th>
                         <th scope="col">ID</th>
+                        <th scope="col">Cliente</th>
                         <th scope="col">Placa</th>
                         <th scope="col">Modelo</th>
                         <th scope="col">Kilometraje</th>
@@ -69,10 +71,18 @@
                 serverSide: true,
                 searching: true,
                 order: [[0, "desc"]],
-                ajax: "{{ route('osinergmins.index-units-data') }}", // Ruta para obtener los datos por AJAX
+                ajax: {
+                    url: "{{ route('osinergmins.index-units-data') }}",
+                    dataSrc: function(json) {
+                        if (json.notice) $('#units-notice').removeClass('d-none').text(json.notice);
+                        else $('#units-notice').addClass('d-none');
+                        return json.data;
+                    }
+                },
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'uuid', name: 'uuid' },
+                    { data: 'client_name', name: 'client_name', defaultContent: '-' },
                     { data: 'plate', name: 'company_name' },
                     { data: 'name_unit', name: 'name_unit' },
                     // { data: 'icon', name: 'icon' },

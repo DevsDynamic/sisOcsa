@@ -78,7 +78,7 @@ class User extends Authenticatable
 
     public function person()
     {
-        return $this->belongsTo(Person::class, 'user_id', 'id');
+        return $this->hasOne(Person::class, 'user_id');
     }
 
     public function scopeVisibleTo($query, ?self $viewer)
@@ -88,5 +88,37 @@ class User extends Authenticatable
         }
 
         return $query->where('users.is_system_owner', false);
+    }
+
+    public function getEmailForPasswordReset(): string
+    {
+        return $this->username;
+    }
+
+    public function routeNotificationForMail(): string
+    {
+        return $this->username;
+    }
+
+    public function getNameAttribute(): string
+    {
+        return $this->person?->full_name ?? $this->username;
+    }
+
+    public function adminlte_profile_url(): string
+    {
+        return 'mi-perfil';
+    }
+
+    public function adminlte_desc(): string
+    {
+        return $this->is_system_owner ? 'Dueño del sistema' : 'Usuario';
+    }
+
+    public function adminlte_image(): string
+    {
+        return $this->profile_photo_path
+            ? route('profile.account.photo.show', ['v' => $this->updated_at?->timestamp])
+            : asset('image/user_preview.png');
     }
 }

@@ -63,7 +63,7 @@ return [
     |
     */
 
-    'logo' => '&nbsp;',//<b>OCSA</b> Perú
+    'logo' => '<b>OCSA</b> GPS',
     'logo_img' => 'vendor/adminlte/dist/img/logo_ocsa_circulo.png',
     'logo_img_class' => 'brand-image img-circle elevation-3',
     'logo_img_xl' => null,
@@ -136,9 +136,9 @@ return [
     'usermenu_enabled' => true,
     'usermenu_header' => false,
     'usermenu_header_class' => 'bg-primary',
-    'usermenu_image' => false,
+    'usermenu_image' => true,
     'usermenu_desc' => true,
-    'usermenu_profile_url' => false,
+    'usermenu_profile_url' => 'mi-perfil',
 
     /*
     |--------------------------------------------------------------------------
@@ -171,12 +171,12 @@ return [
     |
     */
 
-    'classes_auth_card' => '',//card-outline card-primary
-    'classes_auth_header' => 'bg-gradient-info',
+    'classes_auth_card' => 'card-outline card-primary shadow-lg',
+    'classes_auth_header' => '',
     'classes_auth_body' => '',
     'classes_auth_footer' => 'text-center',
     'classes_auth_icon' => 'fa-lg text-info',
-    'classes_auth_btn' => 'btn-flat btn-success rounded',
+    'classes_auth_btn' => 'btn-primary rounded-pill',
 
     /*
     |--------------------------------------------------------------------------
@@ -260,10 +260,10 @@ return [
     'dashboard_url' => 'dashboard',//home
     'logout_url' => 'logout',
     'login_url' => 'login',
-    'register_url' => 'register',
-    'password_reset_url' => 'password/reset',
-    'password_email_url' => 'password/email',
-    'profile_url' => false,
+    'register_url' => false,
+    'password_reset_url' => 'forgot-password',
+    'password_email_url' => 'forgot-password',
+    'profile_url' => 'mi-perfil',
 
     /*
     |--------------------------------------------------------------------------
@@ -308,6 +308,23 @@ return [
             'text' => 'Dashboard',
             'icon' => 'fas fa-tachometer-alt',
             'route' => 'dashboard.index'
+        ],
+        [
+            'text' => 'Mi perfil',
+            'icon' => 'fas fa-user-circle',
+            'route' => 'profile.account',
+        ],
+        [
+            'text' => 'Administración del sistema',
+            'icon' => 'fas fa-sliders-h',
+            'route' => 'system-settings.edit',
+            'can' => 'system.manage',
+        ],
+        [
+            'text' => 'Monitor de integración',
+            'icon' => 'fas fa-heartbeat',
+            'route' => 'integration-monitor.index',
+            'can' => 'system.manage',
         ],
         ['header' => 'MODULOS'],
         [

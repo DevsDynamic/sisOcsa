@@ -43,24 +43,34 @@ class OsinergminExport implements FromQuery, WithHeadings
     protected $unit;
     protected $from;
     protected $to;
+    protected $status;
 
-    public function __construct($unit = null, $from = null, $to = null)
+    public function __construct($unit = null, $from = null, $to = null, $status = null)
     {
         $this->unit = $unit;
         $this->from = $from;
         $this->to   = $to;
+        $this->status = $status;
     }
 
     public function query()
     {
-        $query = Osinergmin::query();
+        $query = Osinergmin::query()->select([
+            'id', 'uuid', 'plate', 'event', 'speed', 'latitude', 'longitude',
+            'gpsDate', 'odometer', 'response_timestamp', 'response_message',
+            'response_suggestion', 'response_status', 'created_at', 'updated_at',
+        ]);
 
         if ($this->unit) {
             $query->where('uuid', $this->unit);
         }
 
+        if ($this->status) {
+            $query->where('response_status', $this->status);
+        }
+
         // Filtrar por rango de fechas
-        $query->whereBetween('response_timestamp', [$this->from, $this->to])
+        $query->whereBetween('created_at', [$this->from, $this->to])
               ->orderBy('id', 'DESC');
 
         return $query;

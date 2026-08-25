@@ -29,7 +29,6 @@ class UserSeeder extends Seeder
             'email' => 'contacto@gmail.com',
             'type_person_id' => 1,
             'user_id' => $user->id, // Relacionar con el usuario
-            'token' => '2bddab5e433a19ac9ebf05b83ad41dca5594a742'
         ]);
     }
 }
