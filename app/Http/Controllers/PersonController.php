@@ -31,8 +31,8 @@ class PersonController extends Controller
     public function indexTable()
     {
         $people = Person::leftJoin('users as u', 'people.user_id', 'u.id')
-                            ->join('type_documents as td', 'people.type_document_id', 'td.id')
-                            ->join('type_people as tp', 'people.type_person_id', 'tp.id')        
+                            ->leftJoin('type_documents as td', 'people.type_document_id', 'td.id')
+                            ->leftJoin('type_people as tp', 'people.type_person_id', 'tp.id')        
                             ->select(
                                     'people.id AS id',
                                     'u.username AS username',

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\SystemSetting;
+use App\Models\Person;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -116,6 +117,24 @@ class SystemExperienceTest extends TestCase
         $this->actingAs($user)->getJson(route('people.index-table', [
             'draw' => 1, 'start' => 0, 'length' => 10,
         ]))->assertOk()->assertJsonStructure(['draw', 'recordsTotal', 'recordsFiltered', 'data']);
+    }
+
+    public function test_clients_without_optional_catalogs_are_visible_and_dashboard_counts_match(): void
+    {
+        $owner = User::factory()->create(['is_system_owner' => true]);
+        Person::create(['full_name' => 'Cliente activo sin documento', 'status' => true]);
+        Person::create(['full_name' => 'Cliente inactivo sin documento', 'status' => false]);
+
+        $this->actingAs($owner)->getJson(route('people.index-table', [
+            'draw' => 1, 'start' => 0, 'length' => 10,
+        ]))->assertOk()
+            ->assertJsonPath('recordsTotal', 2)
+            ->assertJsonCount(2, 'data');
+
+        $this->actingAs($owner)->get(route('dashboard.index'))
+            ->assertOk()
+            ->assertSee('Clientes registrados')
+            ->assertSee('1 activos · 1 inactivos');
     }
 
     public function test_profile_photo_can_be_uploaded(): void

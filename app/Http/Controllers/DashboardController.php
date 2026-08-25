@@ -15,7 +15,10 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $clients = Person::operationalClients()->count();
+        $clientQuery = Person::operationalClients();
+        $clients = (clone $clientQuery)->count();
+        $activeClients = (clone $clientQuery)->where('status', true)->count();
+        $inactiveClients = $clients - $activeClients;
         $gpsSources = Person::activeGpsSources()->count();
         $today = Osinergmin::whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])->count();
         $errorsToday = Osinergmin::whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])->where('response_status', 'ERROR')->count();
@@ -27,7 +30,7 @@ class DashboardController extends Controller
         $todayReportUrl = route('reports.osinergmin', ['from' => now()->toDateString(), 'to' => now()->toDateString()]);
         $todayErrorsUrl = route('reports.osinergmin', ['from' => now()->toDateString(), 'to' => now()->toDateString(), 'status' => 'ERROR']);
 
-        return view('dashboard', compact('clients', 'gpsSources', 'today', 'errorsToday', 'lastTransmission', 'daily', 'environment', 'todayReportUrl', 'todayErrorsUrl'));
+        return view('dashboard', compact('clients', 'activeClients', 'inactiveClients', 'gpsSources', 'today', 'errorsToday', 'lastTransmission', 'daily', 'environment', 'todayReportUrl', 'todayErrorsUrl'));
     }
 
     /**

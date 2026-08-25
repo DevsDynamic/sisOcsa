@@ -9,12 +9,12 @@
 @section('content')
 <div class="row">
  @foreach([
-  ['value'=>$clients,'label'=>'Clientes visibles','icon'=>'fa-users','color'=>'primary','url'=>route('people.index')],
+  ['value'=>$clients,'label'=>'Clientes registrados','detail'=>$activeClients.' activos · '.$inactiveClients.' inactivos','icon'=>'fa-users','color'=>'primary','url'=>route('people.index')],
   ['value'=>$gpsSources,'label'=>'Fuentes GPS activas','icon'=>'fa-satellite-dish','color'=>'info','url'=>route('osinergmins.index')],
   ['value'=>$today,'label'=>'Envíos de hoy','icon'=>'fa-paper-plane','color'=>'success','url'=>$todayReportUrl],
   ['value'=>$errorsToday,'label'=>'Errores de hoy','icon'=>'fa-exclamation-triangle','color'=>'danger','url'=>$todayErrorsUrl]
  ] as $card)
- <div class="col-xl-3 col-md-6"><a href="{{$card['url']}}" class="metric-card"><div class="metric-icon bg-{{$card['color']}}"><i class="fas {{$card['icon']}}"></i></div><div><strong>{{$card['value']}}</strong><span>{{$card['label']}}</span></div><i class="fas fa-chevron-right ml-auto text-muted"></i></a></div>
+ <div class="col-xl-3 col-md-6"><a href="{{$card['url']}}" class="metric-card"><div class="metric-icon bg-{{$card['color']}}"><i class="fas {{$card['icon']}}"></i></div><div><strong>{{$card['value']}}</strong><span>{{$card['label']}}</span>@isset($card['detail'])<small>{{$card['detail']}}</small>@endisset</div><i class="fas fa-chevron-right ml-auto text-muted"></i></a></div>
  @endforeach
 </div>
 <div class="row">
@@ -31,6 +31,7 @@
 @stop
 @section('css')<style>
 .environment-pill{padding:9px 14px;border-radius:30px;font-size:.78rem;font-weight:800;letter-spacing:.05em}.environment-pill.demo{background:#fff3cd;color:#856404}.environment-pill.production{background:#d4edda;color:#155724}.metric-card{display:flex;align-items:center;background:#fff;color:#263238;padding:20px;border-radius:14px;margin-bottom:20px;box-shadow:0 5px 20px rgba(30,55,90,.07);transition:.2s}.metric-card:hover{transform:translateY(-3px);color:#1266f1;box-shadow:0 10px 28px rgba(30,55,90,.13)}.metric-icon{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;color:#fff;font-size:20px;margin-right:14px}.metric-card strong{font-size:26px;display:block;line-height:1}.metric-card span{font-size:13px;color:#6c757d}.modern-card{border:0;border-radius:14px;box-shadow:0 5px 20px rgba(30,55,90,.07)}.status-row{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #edf1f5}.status-row:last-child{border:0}
+.metric-card small{display:block;margin-top:3px;color:#98a1ab;font-size:11px}
 </style>@stop
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
