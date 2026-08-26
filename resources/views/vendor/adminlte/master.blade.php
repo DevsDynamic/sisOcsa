@@ -116,7 +116,7 @@
 
     @auth
         @php($globalEnvironment = \App\Services\SystemConfig::environment())
-        @if(auth()->user()->is_system_owner)
+        @can('system.integrations.manage')
             <a href="{{ route('system-settings.edit') }}" class="global-environment-badge {{ $globalEnvironment === 'production' ? 'production' : 'demo' }}" title="Cambiar ambiente">
                 <i class="fas fa-circle mr-1"></i>{{ $globalEnvironment === 'production' ? 'PRODUCCIÓN' : 'DEMO' }}
             </a>
@@ -124,7 +124,7 @@
             <div class="global-environment-badge {{ $globalEnvironment === 'production' ? 'production' : 'demo' }}">
                 <i class="fas fa-circle mr-1"></i>{{ $globalEnvironment === 'production' ? 'PRODUCCIÓN' : 'DEMO' }}
             </div>
-        @endif
+        @endcan
     @endauth
 
     {{-- Body Content --}}

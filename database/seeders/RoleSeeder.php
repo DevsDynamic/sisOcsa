@@ -19,6 +19,12 @@ class RoleSeeder extends Seeder
         $administrator = Role::create(['name' => 'Administrador']);
         $customer = Role::create(['name' => 'Cliente']);
 
+        // CONFIGURACIÓN DEL SISTEMA. El dueño obtiene acceso total mediante Gate::before.
+        // Al administrador solo se le delegan los canales operativos de notificación.
+        Permission::create(['name' => 'system.settings.view', 'description' => 'VER CONFIGURACIÓN DEL SISTEMA', 'module' => 'moduleSystem', 'sub_module' => 'Configuration'])->assignRole($administrator);
+        Permission::create(['name' => 'system.notifications.manage', 'description' => 'CONFIGURAR CORREO Y TELEGRAM', 'module' => 'moduleSystem', 'sub_module' => 'Configuration'])->assignRole($administrator);
+        Permission::create(['name' => 'system.integrations.manage', 'description' => 'CONFIGURAR AMBIENTE Y RETRANSMISIONES', 'module' => 'moduleSystem', 'sub_module' => 'Configuration']);
+
         // MODULO DASHBOARD
         Permission::create(['name' => 'dashboard.module', 'description' => 'MODULO DASHBOARD', 'module' => 'moduleDashboard', 'sub_module' => null])->assignRole($administrator);
         Permission::create(['name' => 'dashboard.index', 'description' => 'VER DASHBOARD', 'module' => 'moduleDashboard', 'sub_module' => 'Dashboard'])->assignRole($administrator);

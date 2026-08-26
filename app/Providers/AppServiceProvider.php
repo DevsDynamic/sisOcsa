@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
             return $user->is_system_owner ? true : null;
         });
 
-        Gate::define('system.manage', fn ($user) => (bool) $user->is_system_owner);
+        Gate::define('system.manage', fn ($user) => $user->can('system.settings.view'));
 
         // Cuando el dueño configuró SMTP desde el panel, también lo usan
         // recuperación de contraseña y cualquier correo generado por Laravel.

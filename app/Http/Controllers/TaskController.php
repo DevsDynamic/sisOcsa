@@ -571,6 +571,7 @@ class TaskController extends Controller
                 'context' => $context ? $this->sanitizeContext($context) : null,
             ]);
             app(\App\Services\IntegrationMailAlert::class)->handle($environment, $stage, $status, $message);
+            app(\App\Services\IntegrationTelegramAlert::class)->handle($environment, $stage, $status, $message);
         } catch (\Throwable $exception) {
             Log::error('No se pudo registrar la bitácora de integración.', ['message' => $exception->getMessage()]);
         }

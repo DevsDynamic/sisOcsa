@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -86,6 +87,30 @@ class SystemExperienceTest extends TestCase
             ->assertOk()
             ->assertDontSee('smtp-secret')
             ->assertSee('Contraseña guardada: sí');
+    }
+
+    public function test_successful_mail_test_also_persists_the_smtp_password(): void
+    {
+        Mail::fake();
+        $owner = User::factory()->create(['is_system_owner' => true]);
+
+        $this->actingAs($owner)->post(route('system-settings.test-mail'), [
+            'mail_host' => 'smtp.example.com',
+            'mail_port' => 465,
+            'mail_username' => 'alerts@example.com',
+            'mail_password' => 'tested-secret',
+            'mail_encryption' => 'ssl',
+            'mail_from_address' => 'alerts@example.com',
+            'mail_from_name' => 'OCSA GPS',
+            'mail_alert_recipients' => 'owner@example.com',
+            'mail_test_recipient' => 'test@example.com',
+        ])->assertRedirect(route('system-settings.edit'))
+            ->assertSessionHas('mail_status');
+
+        $this->assertSame('tested-secret', SystemSetting::valueFor('mail_password'));
+        $this->actingAs($owner)->get(route('system-settings.edit'))
+            ->assertSee('Contraseña guardada: sí')
+            ->assertDontSee('tested-secret');
     }
 
     public function test_user_can_change_own_password(): void

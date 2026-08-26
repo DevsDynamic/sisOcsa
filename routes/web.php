@@ -50,10 +50,20 @@ Route::middleware([
     Route::put('mi-perfil/password', [ProfileController::class, 'password'])->name('profile.account.password');
     Route::post('mi-perfil/foto', [ProfileController::class, 'photo'])->name('profile.account.photo');
     Route::get('mi-perfil/foto', [ProfileController::class, 'photoContent'])->name('profile.account.photo.show');
-    Route::middleware('system-owner')->group(function () {
+    Route::middleware('can:system.settings.view')->group(function () {
         Route::get('administracion/configuracion', [SystemSettingController::class, 'edit'])->name('system-settings.edit');
-        Route::put('administracion/configuracion', [SystemSettingController::class, 'update'])->name('system-settings.update');
-        Route::post('administracion/configuracion/probar-correo', [SystemSettingController::class, 'testMail'])->name('system-settings.test-mail');
+        Route::put('administracion/configuracion', [SystemSettingController::class, 'update'])
+            ->middleware('can:system.integrations.manage')->name('system-settings.update');
+        Route::put('administracion/configuracion/correo', [SystemSettingController::class, 'updateMail'])
+            ->middleware('can:system.notifications.manage')->name('system-settings.update-mail');
+        Route::post('administracion/configuracion/probar-correo', [SystemSettingController::class, 'testMail'])
+            ->middleware('can:system.notifications.manage')->name('system-settings.test-mail');
+        Route::put('administracion/configuracion/telegram', [SystemSettingController::class, 'updateTelegram'])
+            ->middleware('can:system.notifications.manage')->name('system-settings.update-telegram');
+        Route::post('administracion/configuracion/probar-telegram', [SystemSettingController::class, 'testTelegram'])
+            ->middleware('can:system.notifications.manage')->name('system-settings.test-telegram');
+    });
+    Route::middleware('system-owner')->group(function () {
         Route::get('administracion/monitor', [IntegrationMonitorController::class, 'index'])->name('integration-monitor.index');
         Route::post('administracion/monitor/enviar', [IntegrationMonitorController::class, 'sendNow'])->name('integration-monitor.send-now');
         Route::delete('administracion/datos-demo', [IntegrationMonitorController::class, 'purgeDemo'])->name('integration-monitor.purge-demo');
