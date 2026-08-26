@@ -76,6 +76,7 @@ class TaskController extends Controller
             $client_api = $client_ocsa->token;
             $client_name = $client_ocsa->full_name;
             $resultStart = count($resu);
+            $urlEndpoint = null;
 
             $url = SystemConfig::ocsaBaseUrl() . config('services.ocsa.paths.units');
             $apiKey = $client_api; // TOKEN
@@ -284,7 +285,7 @@ class TaskController extends Controller
                     );
 
                     $resu[] = [
-                        'status' => 'ERROR',
+                        'status' => 'WAF_BLOCKED',
                         'unit' => [],
                         'response' => ['support_id' => $supportId],
                         'bbdd' => false,
@@ -452,6 +453,15 @@ class TaskController extends Controller
             //     $resu[] = ['status' => 'ERROR', 'error_message' => $e->getMessage()];
             } catch (\Throwable $e) {
 
+                $isNetworkError = $e instanceof \GuzzleHttp\Exception\ConnectException
+                    || (bool) preg_match('/cURL error\s+(7|28|35|52|56)\b/i', $e->getMessage());
+                $resultStatus = $isNetworkError ? 'CONNECTION_ERROR' : 'ERROR';
+                $logStage = $isNetworkError ? 'NETWORK' : 'PROCESS';
+                $endpoint = $urlEndpoint ?? $url ?? null;
+                $diagnosticMessage = $isNetworkError
+                    ? "Cliente {$client_name}: no se pudo completar la conexión con el servicio remoto. {$e->getMessage()}"
+                    : "Cliente {$client_name}: {$e->getMessage()}";
+
                 Log::error('Error procesando cliente OCSA', [
                     'cliente' => $client_name,
                     'mensaje' => $e->getMessage(),
@@ -459,10 +469,22 @@ class TaskController extends Controller
                     'linea' => $e->getLine(),
                     'trace' => $e->getTraceAsString()
                 ]);
-                $this->integrationLog($osinergmin_environment, 'PROCESS', 'ERROR', "Cliente {$client_name}: {$e->getMessage()}", $client_ocsa->id);
+                $this->integrationLog(
+                    $osinergmin_environment,
+                    $logStage,
+                    'ERROR',
+                    $diagnosticMessage,
+                    $client_ocsa->id,
+                    null,
+                    [
+                        'endpoint' => $endpoint,
+                        'exception' => get_class($e),
+                        'curl_code' => preg_match('/cURL error\s+(\d+)/i', $e->getMessage(), $curlMatch) ? (int) $curlMatch[1] : null,
+                    ]
+                );
 
                 $resu[] = [
-                    'status' => 'ERROR',
+                    'status' => $resultStatus,
                     'unit' => [],
                     'response' => [],
                     'bbdd' => false,
@@ -475,11 +497,13 @@ class TaskController extends Controller
         $errors = collect($resu)->where('status', 'ERROR')->count();
         $successes = collect($resu)->where('status', 'SUCCESS')->count();
         $unknowns = collect($resu)->where('status', 'UNKNOWN')->count();
+        $blocked = collect($resu)->where('status', 'WAF_BLOCKED')->count();
+        $connectionErrors = collect($resu)->where('status', 'CONNECTION_ERROR')->count();
         $this->integrationLog(
             $osinergmin_environment,
             'RUN',
-            $errors > 0 ? 'ERROR' : ($unknowns > 0 ? 'WARNING' : 'SUCCESS'),
-            "Ejecución finalizada: {$successes} aceptados, {$errors} rechazados y {$unknowns} sin estado concluyente; {$clients_ocsa->count()} clientes evaluados."
+            ($errors > 0 || $blocked > 0 || $connectionErrors > 0) ? 'ERROR' : ($unknowns > 0 ? 'WARNING' : 'SUCCESS'),
+            "Ejecución finalizada: {$successes} aceptados, {$errors} rechazados por la API, {$blocked} bloqueados por el firewall, {$connectionErrors} errores de conexión y {$unknowns} sin estado concluyente; {$clients_ocsa->count()} clientes evaluados."
         );
 
         return view('welcome', compact('resu', 'Date'));

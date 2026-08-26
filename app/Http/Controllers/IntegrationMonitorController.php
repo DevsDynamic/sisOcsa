@@ -59,7 +59,10 @@ class IntegrationMonitorController extends Controller
             $results = method_exists($response, 'getData') ? ($response->getData()['resu'] ?? []) : [];
             $success = collect($results)->where('status', 'SUCCESS')->count();
             $errors = collect($results)->where('status', 'ERROR')->count();
-            return back()->with($errors ? 'warning' : 'status', "Ejecución manual finalizada: {$success} exitosos y {$errors} errores. Revisa la bitácora.");
+            $blocked = collect($results)->where('status', 'WAF_BLOCKED')->count();
+            $unknown = collect($results)->where('status', 'UNKNOWN')->count();
+            $connectionErrors = collect($results)->where('status', 'CONNECTION_ERROR')->count();
+            return back()->with(($errors || $blocked || $connectionErrors || $unknown) ? 'warning' : 'status', "Ejecución manual finalizada: {$success} aceptados, {$errors} rechazados por la API, {$blocked} bloqueados por el firewall, {$connectionErrors} errores de conexión y {$unknown} sin estado concluyente. Revisa la bitácora.");
         } catch (\Throwable $exception) {
             return back()->with('warning', 'La ejecución no pudo completarse: '.$exception->getMessage());
         }
