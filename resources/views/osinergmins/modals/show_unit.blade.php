@@ -1,81 +1,42 @@
-<!-- Modal de Visualización de usuario -->
-<div class="modal fade" id="modal-show-unit" tabindex="-1" aria-labelledby="showTypeCustomerLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header bg-info">
-                <h5 class="modal-title">VER RETRANSMISIONES A OSINERGMIN DE LA UNIDAD: <strong><span class="plate"></span></strong></h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+<div class="modal fade" id="modal-show-unit" tabindex="-1" role="dialog" aria-labelledby="showUnitTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content retransmission-modal">
+            <div class="modal-header bg-info text-white">
+                <div>
+                    <small class="d-block text-uppercase modal-eyebrow">Historial de retransmisión</small>
+                    <h5 class="modal-title" id="showUnitTitle">Unidad <strong class="plate"></strong></h5>
+                </div>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span
+                        aria-hidden="true">&times;</span></button>
             </div>
-          
-            <form id="formDispatch" name="formDispatch">
-                <input type="hidden" id="hiddenIDdispatch" name="hiddenID" class="form-control">
-                <div class="modal-header">
-                    A continuación se muestra las retransmisiones a Osinergmin de los últimos 30 días calendario.
+            <div class="modal-body">
+                <div class="history-summary">
+                    <div><i class="far fa-calendar-alt"></i><span><strong>Últimos 30 días</strong><small>Los registros
+                                más recientes aparecen primero.</small></span></div>
+                    <div class="status-legend"><span class="status-pill success">Aceptado</span><span
+                            class="status-pill error">Rechazado</span><span class="status-pill unknown">Sin
+                            confirmación</span></div>
                 </div>
-                <div class="modal-body">                    
-                    {{-- Seccion detalle de retransmisiones --}}
-                    <div class="border rounded card-body border-secondary" id="vertabla">
-                        <div class="card-body">
-                            <div class="form-row">  
-                                <div class="table-responsive">
-                                    <table id="detalles" class="table table-striped align-middle table-centered" style="width:100%">
-                                        <thead class="bg-primary">
-                                            <tr class="bg-black">
-                                                <th scope="col" colspan="8" class="text-center border">Datos OCSA</th>
-                                                <th scope="col" colspan="4" class="text-center border">Respuesta Osinergmin</th>
-                                            </tr>
-                                            <tr>
-                                                <th scope="col" class="border">N°</th>
-                                                <th scope="col" class="border">Cod.</th>
-                                                <th scope="col" class="border">Evento</th>
-                                                <th scope="col" class="border">Velocidad</th>
-                                                <th scope="col" class="border">Latitud</th>
-                                                <th scope="col" class="border">Longitud</th>
-                                                <th scope="col" class="border">Fecha de envío</th>
-                                                <th scope="col" class="border">Kilometraje</th>
-                                                <th scope="col" class="border">Fecha de respuesta</th>
-                                                <th scope="col" class="border">Mensaje</th>
-                                                <th scope="col" class="border">Sugerencia</th>
-                                                <th scope="col" class="border">Estado</th>
-                                            </tr>
-                                        </thead>                                        
-                                        <tbody>
-                                            <!-- FILAS GENERADAS DINÁMICAMENTE POR JAVASCRIPT -->
-                                        </tbody>
-                                        <tfoot class="bg-light">
-                                            <tr>
-                                                <th scope="col" class="border">N°</th>
-                                                <th scope="col" class="border">Cod.</th>
-                                                <th scope="col" class="border">Evento</th>
-                                                <th scope="col" class="border">Velocidad</th>
-                                                <th scope="col" class="border">Latitud</th>
-                                                <th scope="col" class="border">Longitud</th>
-                                                <th scope="col" class="border">Fecha de envío</th>
-                                                <th scope="col" class="border">Kilometraje</th>
-                                                <th scope="col" class="border">Fecha de respuesta</th>
-                                                <th scope="col" class="border">Mensaje</th>
-                                                <th scope="col" class="border">Sugerencia</th>
-                                                <th scope="col" class="border">Estado</th>
-                                            </tr>
-                                        </tfoot>
-                                    </table>                              
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div id="unit-history-notice" class="alert alert-danger d-none" role="alert"></div>
+                <div class="history-table-shell">
+                    <table id="detalles" class="table table-hover mb-0" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>N.º</th>
+                                <th>Evento</th>
+                                <th>Movimiento</th>
+                                <th>Coordenadas</th>
+                                <th>Fecha GPS</th>
+                                <th>Respuesta de Osinergmin</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        <i class="fas fa-times-circle"></i> Cerrar
-                    </button>
-                    {{-- <button type="submit" class="btn btn-success">
-                        <i class="fas fa-save"></i> Confirmar
-                    </button> --}}
-                </div>
-            </form>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-light border" data-dismiss="modal"><i
+                        class="fas fa-times mr-1"></i>Cerrar</button></div>
         </div>
     </div>
 </div>

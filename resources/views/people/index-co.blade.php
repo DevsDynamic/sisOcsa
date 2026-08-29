@@ -190,6 +190,7 @@
                     url: url,
                     method: 'GET',
                     success: function (data) {
+                        loadPersonHistory(id, modal);
                         console.log(data.html);
                         // Aquí llenamos el modal con los datos recibidos
                         modal.find('#type_document').val(data.html.type_document);
@@ -254,6 +255,11 @@
                         modal.find('#document_number').val(data.html.document_number);
                         modal.find('#full_name').val(data.html.full_name);
                         modal.find('#type_person').val(data.html.type_person_id).trigger('change');
+                        modal.find('#email').val(data.html.email);
+                        modal.find('#phone_number').val(data.html.phone_number);
+                        modal.find('#lead_source').val(data.html.lead_source);
+                        modal.find('#commercial_notes').val(data.html.commercial_notes);
+                        modal.find('#marketing_consent').prop('checked', !!data.html.marketing_consent);
                         selectTypePerson(modal);  // Ejecutar la función en el modal de edición
                         evaluateTypePerson(modal); // Evaluar si se deben mostrar los campos
                         // Verificar y mostrar los campos al cargar la página si es contcato

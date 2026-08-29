@@ -1,245 +1,503 @@
 @extends('adminlte::page')
-
-@section('title', 'Empresas')
+@section('title', 'Retransmisiones a Osinergmin')
 
 @section('content_header')
-    <h1>CLIENTES CON RETRANSMISION A OSINERGMIN</h1>
+    <div>
+        <h1 class="mb-1"><i class="fas fa-broadcast-tower text-info mr-2"></i>Retransmisiones a Osinergmin</h1>
+        <p class="text-muted mb-0">Clientes y unidades vinculados al proveedor GPS OCSA.</p>
+    </div>
 @stop
 
 @section('content')
-    <div class="card">
+    <div class="card client-units-card">
         <div class="card-body">
-            <table id="tablaPrincipal" class="table table-striped table-centered">
+            <table id="tablaPrincipal" class="table table-hover" style="width:100%">
                 <thead>
                     <tr>
-                        <th scope="col">N°</th>
-                        <th scope="col">Cliente</th>
-                        <th scope="col">Empresa</th>
-                        <th scope="col">Unidades</th>
-                        {{-- <th scope="col">Acciones</th> --}}
+                        <th>N.º</th>
+                        <th>Cliente</th>
+                        <th>Empresa</th>
+                        <th>Unidades</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Los datos se llenarán dinámicamente por AJAX -->
-                </tbody>
-            </table>            
+                <tbody></tbody>
+            </table>
         </div>
-        @include('osinergmins.modals.show_unit')
     </div>
+    @include('osinergmins.modals.show_unit')
 @stop
 
 @section('css')
     <style>
-        .col-2 {
-            min-width: 100px; /* Tamaño mínimo */
-            min-height: 100px; /* Altura mínima */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px !important; /* Forzar esquinas redondeadas */
-            overflow: hidden; /* Evita que el contenido sobresalga */
+        .client-units-card>.card-body {
+            padding: 1.25rem
         }
 
-        .shadow-sm {
-            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); /* Sombra suave */
+        .company-detail strong {
+            display: block;
+            font-size: .95rem
+        }
+
+        .company-detail small {
+            display: block;
+            color: #6d7885;
+            line-height: 1.45
+        }
+
+        .unit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+            gap: 10px;
+            min-width: 280px
+        }
+
+        .unit-tile {
+            border: 1px solid #e0e6ed;
+            border-radius: 10px;
+            padding: 11px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            transition: .18s
+        }
+
+        .unit-tile:hover {
+            border-color: #1fa3b8;
+            box-shadow: 0 4px 12px rgba(31, 163, 184, .12)
+        }
+
+        .unit-tile i {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: #e9f7fa;
+            color: #16889a;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .unit-tile strong {
+            display: block;
+            font-size: .84rem
+        }
+
+        .unit-tile button {
+            padding: 0;
+            border: 0;
+            background: none;
+            color: #16889a;
+            font-size: .75rem;
+            font-weight: 700
+        }
+
+        .modal-eyebrow {
+            font-size: .67rem;
+            letter-spacing: .12em;
+            opacity: .85
+        }
+
+        .history-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+            border: 1px solid #dce4ec;
+            border-radius: 10px;
+            background: #f8fafc
+        }
+
+        .history-summary>div:first-child {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .history-summary i {
+            font-size: 1.4rem;
+            color: #1fa3b8
+        }
+
+        .history-summary strong,
+        .history-summary small {
+            display: block
+        }
+
+        .history-summary small {
+            color: #6c7887
+        }
+
+        .status-legend {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap
+        }
+
+        .history-table-shell {
+            border: 1px solid #dfe5ec;
+            border-radius: 10px;
+            padding: 14px;
+            background: #fff;
+            overflow: hidden
+        }
+
+        .history-table-shell .dataTables_scroll {
+            border: 1px solid #e5eaf0;
+            border-radius: 8px;
+            overflow: hidden
+        }
+
+        .history-table-shell .dataTables_scrollHead {
+            background: #eef4f8
+        }
+
+        .history-table-shell table.dataTable thead th {
+            background: #eef4f8;
+            color: #314355;
+            border-bottom: 2px solid #cfdae4 !important
+        }
+
+        .history-table-shell table.dataTable tbody td {
+            vertical-align: top;
+            line-height: 1.35
+        }
+
+        .history-response {
+            min-width: 255px;
+            max-width: 380px
+        }
+
+        .history-response strong {
+            display: block;
+            font-size: .82rem
+        }
+
+        .history-response small {
+            display: block;
+            color: #657384;
+            margin-top: 3px
+        }
+
+        .history-response .response-date {
+            color: #1769aa;
+            margin-bottom: 4px
+        }
+
+        .coordinate-value {
+            font-family: monospace;
+            font-size: .78rem;
+            white-space: nowrap
+        }
+
+        .movement-data {
+            white-space: nowrap
+        }
+
+        .movement-data small {
+            display: block;
+            color: #6c7887
+        }
+
+        .history-table-shell .dataTables_filter,
+        .history-table-shell .dataTables_length {
+            margin-bottom: 10px
+        }
+
+        .history-table-shell .dataTables_scrollBody {
+            overflow-x: auto !important
+        }
+
+        .history-table-shell .dataTables_wrapper {
+            overflow: visible !important
+        }
+
+        @media(max-width:767px) {
+            .history-summary {
+                align-items: flex-start;
+                flex-direction: column
+            }
+
+            .status-legend {
+                display: none
+            }
+
+            .history-table-shell {
+                padding: 8px
+            }
+
+            .retransmission-modal .modal-body {
+                padding: .8rem
+            }
+
+            .unit-grid {
+                grid-template-columns: repeat(2, minmax(115px, 1fr))
+            }
+        }
+
+        .unit-tile.show-unit {
+            cursor: pointer
+        }
+
+        .unit-tile.show-unit:hover,
+        .unit-tile.show-unit:focus {
+            border-color: #1fa3b8;
+            box-shadow: 0 4px 12px rgba(31, 163, 184, .12);
+            outline: 0;
+            transform: translateY(-1px)
+        }
+
+        .unit-history-link {
+            color: #16889a;
+            font-size: .75rem;
+            font-weight: 700
         }
     </style>
 @stop
 
 @section('js')
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
-        $(document).ready(function() {
-            // Configuración global para las solicitudes AJAX
+        $(function() {
             $.ajaxSetup({
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
             });
+            const escapeHtml = value => $('<div>').text(value == null ? '' : String(value)).html();
+            const empty = value => value === null || value === undefined || String(value).trim() === '';
+            const display = value => empty(value) ? 'Sin registro' : escapeHtml(value);
+            const formatDate = value => {
+                if (empty(value)) return 'Sin registro';
+                const normalized = String(value).includes('T') ? String(value) : String(value).replace(' ',
+                    'T') + '-05:00';
+                const date = new Date(normalized);
+                return isNaN(date.getTime()) ? escapeHtml(value) : new Intl.DateTimeFormat('es-PE', {
+                    dateStyle: 'short',
+                    timeStyle: 'medium',
+                    timeZone: 'America/Lima'
+                }).format(date);
+            };
+            const statusBadge = status => {
+                const value = String(status || 'UNKNOWN').toUpperCase();
+                if (['SUCCESS', 'CREATED', 'ACCEPTED', 'OK'].includes(value))
+                return '<span class="status-pill success" title="Estado técnico: ' + escapeHtml(value) +
+                    '">Aceptado</span>';
+                if (['ERROR', 'REJECTED', 'FAILED'].includes(value))
+                return '<span class="status-pill error" title="Estado técnico: ' + escapeHtml(value) +
+                    '">Rechazado</span>';
+                return '<span class="status-pill unknown" title="Osinergmin respondió, pero no informó aceptación ni rechazo. Estado técnico: ' +
+                    escapeHtml(value) + '">Sin confirmación</span>';
+            };
 
-            // Inicialización de DataTables
             $('#tablaPrincipal').DataTable({
                 responsive: true,
                 autoWidth: false,
                 processing: true,
                 serverSide: true,
                 searching: true,
-                order: [[0, "desc"]],
-                ajax: "{{ route('osinergmins.index-table') }}", // Ruta para obtener los datos por AJAX
-                columns: [
-                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                    { data: 'nombre_cliente', name: 'nombre_cliente',
-                        render: function(data, type, row) {
-                            return row.nombre_cliente ? row.nombre_cliente : "Sin registrar";
+                order: [
+                    [0, 'desc']
+                ],
+                pageLength: 10,
+                ajax: {
+                    url: "{{ route('osinergmins.index-table') }}",
+                    error: function(xhr) {
+                        Swal.fire('No se pudo cargar',
+                            'La consulta de clientes y unidades no respondió correctamente.',
+                            'error');
+                    }
+                },
+                columns: [{
+                        data: 'DT_RowIndex',
+                        orderable: false,
+                        searchable: false,
+                        width: '45px'
+                    },
+                    {
+                        data: 'nombre_cliente',
+                        name: 'nombre_cliente',
+                        render: data => '<strong>' + display(data) + '</strong>'
+                    },
+                    {
+                        data: 'empresa',
+                        name: 'empresa',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data) {
+                            if (!data || !data.company_name)
+                            return '<span class="text-muted">Sin empresa registrada</span>';
+                            return '<div class="company-detail"><strong>' + display(data
+                                    .company_name) + '</strong><small>' + display(data.address) +
+                                '</small><small>ID OCSA: ' + display(data.company_id) +
+                                '</small></div>';
                         }
                     },
-                    { data: 'empresa.company_name', name: 'empresa.company_name',
-                        render: function(data, type, row) {
-                            if (row.empresa) {
-                                return `
-                                    <strong>${row.empresa.company_name}</strong><br>
-                                    Dirección: ${row.empresa.address ? row.empresa.address : "Sin registrar"}<br>
-                                    Id: ${row.empresa.company_id ? row.empresa.company_id : "Sin registrar"}
-                                `;
-                            } else {
-                                return "Sin registrar";
-                            }
+                    {
+                        data: 'units',
+                        name: 'units',
+                        orderable: false,
+                        searchable: false,
+                        render: function(units) {
+                            if (!Array.isArray(units) || !units.length)
+                            return '<span class="text-muted">Sin unidades</span>';
+                            return '<div class="unit-grid">' + units.map(unit =>
+                                '<div class="unit-tile show-unit" role="button" tabindex="0" data-id="' +
+                                escapeHtml(unit.uuid) + '" data-plate="' + escapeHtml(unit
+                                    .plate) + '"><i class="fas fa-car-side"></i><div><strong>' +
+                                display(unit.plate) +
+                                '</strong><span class="unit-history-link">Ver historial</span></div></div>'
+                                ).join('') + '</div>';
                         }
-                    },
-                    { data: 'units', name: 'units',
-                        render: function(data, type, row) {
-                            let unidadesHtml = '';
-
-                            if (Array.isArray(row.units) && row.units.length > 0) {
-                                unidadesHtml += `<div class="d-flex flex-wrap justify-content-start gap-2 g-2">`; // Contenedor flexible
-
-                                row.units.forEach(function(unidad, index) {
-                                    unidadesHtml += `
-                                        <div class="col-2 p-3 text-center bg-white m-1 rounded-3 shadow-sm d-flex flex-column align-items-center justify-content-center">
-                                            <i class="fas fa-car fa-2x mb-2"></i>
-                                            <div class="fw-bold">${unidad.plate}</div>
-                                            <button class="btn btn-sm btn-info show-unit mt-2" 
-                                                data-id="${unidad.uuid}" 
-                                                data-plate="${unidad.plate}">
-                                                Ver detalles
-                                            </button>
-                                        </div>
-                                    `;
-                                });
-
-                                unidadesHtml += `</div>`; // Cierre del contenedor
-                            } else {
-                                unidadesHtml = '<p>No hay unidades disponibles</p>';
-                            }
-
-                            return unidadesHtml;
-                        }
-                    },
-                    // { // Botones
-                    //     data: 'action',
-                    //     name: 'action',
-                    //     orderable: false,
-                    //     searchable: false
-                    // }
+                    }
                 ],
                 language: {
-                    "decimal": "",
-                    "emptyTable": "No hay información",
-                    "info": "Mostrando del _START_ al _END_ de _TOTAL_ Registros",
-                    "infoEmpty": "Mostrando 0 to 0 of 0 Entradas",
-                    "infoFiltered": "(Filtrado de _MAX_ total entradas)",
-                    "infoPostFix": "",
-                    "thousands": ",",
-                    "lengthMenu": "Mostrar " +
-                                    `<select class="custom-select custom-select-sm form-control form-control-sm">
-                                        <option value='10'>10</option>
-                                        <option value='25'>25</option>
-                                        <option value='50'>50</option>
-                                        <option value='100'>100</option>
-                                        <option value='-1'>Todo</option>
-                                    </select>` +
-                                    " Registros",
-                    "loadingRecords": "Cargando...",
-                    "processing": "Procesando...",
-                    "search": "Buscar:",
-                    "zeroRecords": "Sin resultados encontrados",
-                    "paginate": {
-                        "first": "Primero",
-                        "last": "Último",
-                        "next": "Siguiente",
-                        "previous": "Anterior"
+                    emptyTable: 'No hay clientes con unidades disponibles',
+                    info: 'Mostrando _START_–_END_ de _TOTAL_',
+                    infoEmpty: 'Sin registros',
+                    lengthMenu: 'Mostrar _MENU_',
+                    loadingRecords: 'Cargando...',
+                    processing: 'Consultando OCSA...',
+                    search: 'Buscar',
+                    zeroRecords: 'No se encontraron coincidencias',
+                    paginate: {
+                        next: 'Siguiente',
+                        previous: 'Anterior'
                     }
                 }
             });
-        });
 
-        // Modal ver unidad
-        $(document).on('click', '.show-unit', function () {
-            let unidadId = $(this).data('id');
-            let plate = $(this).data('plate');
-            let modal = $('#modal-show-unit'); // Definir el modal correctamente
-            let entity = "unidad";
-
-            console.log('open modal show unit');
-
-            modal.find('.texttitle').text((entity).toUpperCase()); // Cambiar .text() por .val() para input
-            modal.find('.entity').text(entity);
-            modal.find('.plate').text(plate);
-
-            modal.modal('show');
-
-            if ($.fn.DataTable.isDataTable('#detalles')) {
-                $('#detalles').DataTable().destroy();
-                $('#detalles tbody').empty();
-            }
-
-            $('#detalles').DataTable({
-                processing: true,
-                serverSide: true,
-                responsive: true,
-                autoWidth: false,
-                pageLength: 25,
-                order: [[1, 'desc']],
-                ajax: `/osinergmin-retransmission/${encodeURIComponent(unidadId)}`,
-                columns: [
-                    { data: 'DT_RowIndex', orderable: false, searchable: false },
-                    { data: 'code', name: 'id', searchable: false },
-                    { data: 'event', name: 'event', defaultContent: 'Sin registro' },
-                    { data: 'speed', name: 'speed', defaultContent: 'Sin registro' },
-                    { data: 'latitude', name: 'latitude', defaultContent: 'Sin registro' },
-                    { data: 'longitude', name: 'longitude', defaultContent: 'Sin registro' },
-                    { data: 'gpsDate', name: 'gpsDate', defaultContent: 'Sin registro' },
-                    { data: 'odometer', name: 'odometer', defaultContent: 'Sin registro' },
-                    { data: 'response_timestamp', name: 'response_timestamp', defaultContent: 'Sin registro' },
-                    { data: 'response_message', name: 'response_message', defaultContent: 'Sin registro' },
-                    { data: 'response_suggestion', name: 'response_suggestion', defaultContent: 'Sin registro' },
-                    { data: 'response_status', name: 'response_status', defaultContent: 'Sin registro' }
-                ],
-                language: {
-                    emptyTable: 'No hay detalles registrados',
-                    processing: 'Consultando retransmisiones...',
-                    search: 'Buscar:',
-                    lengthMenu: 'Mostrar _MENU_ registros',
-                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-                    paginate: { previous: 'Anterior', next: 'Siguiente' }
+            $(document).on('click', '.show-unit', function() {
+                const unitId = $(this).data('id'),
+                    plate = $(this).data('plate'),
+                    modal = $('#modal-show-unit');
+                modal.find('.plate').text(plate || 'Sin placa');
+                $('#unit-history-notice').addClass('d-none').empty();
+                modal.modal('show');
+                if ($.fn.DataTable.isDataTable('#detalles')) {
+                    $('#detalles').DataTable().destroy();
+                    $('#detalles tbody').empty();
                 }
+                $('#detalles').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    responsive: false,
+                    autoWidth: false,
+                    scrollX: true,
+                    scrollCollapse: true,
+                    pageLength: 25,
+                    order: [],
+                    ajax: {
+                        url: '{{ url('/osinergmin-retransmission') }}/' + encodeURIComponent(
+                            unitId),
+                        error: function(xhr) {
+                            $('#unit-history-notice').removeClass('d-none').text(xhr.status ===
+                                403 ? 'No tienes permiso para consultar esta unidad.' :
+                                'No se pudo cargar el historial. Revisa el monitor de integración o intenta nuevamente.'
+                                );
+                        }
+                    },
+                    columns: [{
+                            data: 'DT_RowIndex',
+                            orderable: false,
+                            searchable: false,
+                            width: '45px'
+                        },
+                        {
+                            data: 'event',
+                            name: 'event',
+                            render: data => '<strong>' + display(data) + '</strong>'
+                        },
+                        {
+                            data: null,
+                            orderable: false,
+                            searchable: false,
+                            render: row => '<div class="movement-data"><strong>' + display(row
+                                    .speed) + ' km/h</strong><small>' + display(row.odometer) +
+                                ' km</small></div>'
+                        },
+                        {
+                            data: null,
+                            orderable: false,
+                            searchable: false,
+                            render: row => '<span class="coordinate-value">' + display(row
+                                .latitude) + '<br>' + display(row.longitude) + '</span>'
+                        },
+                        {
+                            data: 'gpsDate',
+                            name: 'gpsDate',
+                            render: data => formatDate(data)
+                        },
+                        {
+                            data: null,
+                            orderable: false,
+                            searchable: true,
+                            render: function(row) {
+                                const message = empty(row.response_message) ?
+                                    'Sin mensaje descriptivo' : row.response_message;
+                                const suggestion = empty(row.response_suggestion) ?
+                                    'Sin sugerencia adicional' : row.response_suggestion;
+                                return '<div class="history-response"><small class="response-date">' +
+                                    formatDate(row.response_timestamp) +
+                                    '</small><strong>' + display(message) +
+                                    '</strong><small>' + display(suggestion) +
+                                    '</small></div>';
+                            }
+                        },
+                        {
+                            data: 'response_status',
+                            name: 'response_status',
+                            render: data => statusBadge(data)
+                        }
+                    ],
+                    language: {
+                        emptyTable: 'No hay retransmisiones en los últimos 30 días',
+                        processing: 'Consultando historial...',
+                        search: 'Buscar',
+                        lengthMenu: 'Mostrar _MENU_',
+                        info: 'Mostrando _START_–_END_ de _TOTAL_',
+                        infoEmpty: 'Sin registros',
+                        zeroRecords: 'Sin coincidencias',
+                        paginate: {
+                            previous: 'Anterior',
+                            next: 'Siguiente'
+                        }
+                    },
+                    drawCallback: function() {
+                        $.fn.dataTable.tables({
+                            visible: true,
+                            api: true
+                        }).columns.adjust();
+                    }
+                });
+            });
+            $(document).on('keydown', '.unit-tile.show-unit', function(event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    $(this).trigger('click');
+                }
+            });
+            $('#modal-show-unit').on('shown.bs.modal', function() {
+                if ($.fn.DataTable.isDataTable('#detalles')) $('#detalles').DataTable().columns.adjust();
             });
         });
     </script>
-
     @if (session('success'))
         <script>
             Swal.fire({
-                position: 'center',
                 icon: 'success',
-                title: '{{ session('success') }}',
+                title: @json(session('success')),
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1700
             });
         </script>
     @endif
-
     @if (session('error'))
         <script>
             Swal.fire({
-                position: 'center',
                 icon: 'error',
-                title: '{{ session('error') }}',
-                showConfirmButton: true
-            });
-        </script>
-    @endif
-
-    @if (session('info'))
-        <script>
-            Swal.fire({
-                position: 'center',
-                icon: 'info',
-                title: '{{ session('info') }}',
-                showConfirmButton: false,
-                timer: 1500
+                title: @json(session('error'))
             });
         </script>
     @endif

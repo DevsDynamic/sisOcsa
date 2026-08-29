@@ -1,103 +1,87 @@
-{{-- SECCION DE CLIENTE --}}
-<div class="border rounded card-body border-secondary">
-    <div class="card-body">
-        <div class="form-row">
-            <!-- Tipo Documento -->
-            <div class="form-group col-lg-6">
-                <label for="type_document">Tipo Doc. Identidad<span class="text-danger">*</span></label>
-                <select id="type_document" name="type_document" class="form-control" style="width: 100%" autocomplete="off">
-                    <option value="">Seleccione un tipo de documento</option>
-                    @foreach($typeDocuments as $typeDocument)
-                        <option value="{{ $typeDocument->id }}" data-max-length="{{ $typeDocument->max_length }}">{{ $typeDocument->name }}</option>
+<div class="person-form">
+    <div class="form-section">
+        <h6><i class="fas fa-id-card mr-2"></i>Identificación</h6>
+        <div class="row form-spaced">
+            <div class="form-group col-lg-6"><label for="type_document">Tipo de documento <small
+                        class="text-muted cp-optional">(opcional para prospectos)</small></label><select
+                    id="type_document" name="type_document" class="form-control">
+                    <option value="">Seleccione</option>
+                    @foreach ($typeDocuments as $typeDocument)
+                        <option value="{{ $typeDocument->id }}" data-max-length="{{ $typeDocument->max_length }}">
+                            {{ $typeDocument->name }}</option>
                     @endforeach
                 </select>
             </div>
-            
-            <!-- Número Documento -->
-            <div class="form-group col-lg-6">
-                <label for="document_number">Número<span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <input id="document_number" name="document_number" type="text" class="form-control @error('document_number') is-invalid @enderror" placeholder="Ingrese número de documento" value="{{ old('document_number', $customer->document_number ?? '') }}" required autocomplete="document-number">
-                    <div class="input-group-append" id="toggleSearchContainer">
-                        <button id="toggleSearch" type="button" class="btn btn-outline-secondary">
-                            <i class="fas fa-search"></i>
-                            <span id="textSearch">Buscar</span>
-                        </button>
-                    </div>
+            <div class="form-group col-lg-6"><label for="document_number">Número de documento <small
+                        class="text-muted cp-optional">(opcional para prospectos)</small></label>
+                <div class="input-group"><input id="document_number" name="document_number" type="text"
+                        class="form-control" placeholder="DNI o RUC"
+                        value="{{ old('document_number', $customer->document_number ?? '') }}">
+                    <div class="input-group-append" id="toggleSearchContainer"><button id="toggleSearch" type="button"
+                            class="btn btn-outline-secondary"><i class="fas fa-search mr-1"></i><span
+                                id="textSearch">Buscar</span></button></div>
                 </div>
-                @error('document_number')
-                    <small class="text-danger">{{ $message }}</small>
-                @enderror
             </div>
-            
-            <!-- Nombres completo -->
-            <div class="form-group col-lg-6">
-                <label for="full_name">Nombre completo<span class="text-danger">*</span></label>
-                <input id="full_name" name="full_name" type="text" class="form-control @error('full_name') is-invalid @enderror" placeholder="Ingrese nombre del cliente" value="{{ old('full_name', $customer->full_name ?? '') }}" required> <!-- autocomplete="name" -->
-                @error('full_name')  
-                    <small class="text-danger">{{ $message }}</small>
-                @enderror
-            </div>
-            
-            <!-- Tipo de Cliente -->
-            <div class="form-group col-lg-6">
-                <label for="type_person">Tipo de cliente<span class="text-danger">*</span></label>
-                <select id="type_person" name="type_person" class="form-control" style="width: 100%" autocomplete="off">
-                    <option value="">Seleccione un tipo de cliente</option>
-                    @foreach($typePeople as $TypePerson)
-                        <option value="{{ $TypePerson->id }}" data-code="{{ strtolower($TypePerson->code) }}">{{ $TypePerson->name }}</option>
+            <div class="form-group col-lg-6"><label for="full_name">Nombre completo / razón social <span
+                        class="text-danger">*</span></label><input id="full_name" name="full_name" class="form-control"
+                    value="{{ old('full_name', $customer->full_name ?? '') }}" required></div>
+            <div class="form-group col-lg-6"><label for="type_person">Etapa comercial <span
+                        class="text-danger">*</span></label><select id="type_person" name="type_person"
+                    class="form-control">
+                    <option value="">Seleccione</option>
+                    @foreach ($typePeople as $typePerson)
+                        <option value="{{ $typePerson->id }}" data-code="{{ strtolower($typePerson->code) }}">
+                            {{ $typePerson->name }}</option>
                     @endforeach
                 </select>
-                @error('type_person')
-                    <small class="text-danger">{{ $message }}</small>
-                @enderror
+                <small class="text-muted">Una vez creado, el cambio de etapa se realiza mediante el flujo de
+                    conversión.</small>
             </div>
+        </div>
+    </div>
 
-            <!-- Sección de campos adicionales para contactos (solo si es contacto) -->
-            <div id="contactFields" style="display: none;" class="form-group col-lg-12">
-                <div class="row">
-                    <!-- email  -->
-                    <div class="form-group col-lg-6 email">
-                        <label for="email">Correo Electrónico<span style="color: red">*</span></label>
-                        <input type="email" id="email" name="email" class="form-control @error('email') is-invalid @enderror" placeholder="Ingrese correo electrónico" value="{{ old('email', $user->email ?? '') }}">
-                        @error('email')
-                            <small class="text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-                    <!-- Fecha de Nacimiento -->
-                    <div class="form-group col-lg-6">
-                        <label for="birthdate">Fecha de Nacimiento</label>
-                        <input type="date" id="birthdate" name="birthdate" class="form-control @error('birthdate') is-invalid @enderror" value="{{ old('birthdate', $user->birthdate ?? '') }}">
-                        @error('birthdate')
-                            <small class="text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-                    <!-- Dirección -->
-                    <div class="form-group col-lg-6 address">
-                        <label for="address">Dirección</label>
-                        <input type="text" id="address" name="address" class="form-control @error('address') is-invalid @enderror" placeholder="Ingrese la dirección" value="{{ old('address', $user->address ?? '') }}">
-                        @error('address')
-                            <small class="text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-                    <!-- Teléfono (Máximo 9 dígitos, solo números) -->
-                    <div class="form-group col-lg-6">
-                        <label for="phone_number">Teléfono</label>
-                        <input type="text" id="phone_number" name="phone_number" class="form-control @error('phone_number') is-invalid @enderror" placeholder="Ingrese el teléfono" value="{{ old('phone_number', $user->phone_number ?? '') }}" maxlength="9" pattern="[0-9]{9}">
-                        @error('phone_number')
-                            <small class="text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-                    <!-- Token (Alfanumérico) -->
-                    <div class="form-group col-lg-12">
-                        <label for="token">Token</label>
-                        <input type="text" id="token" name="token" class="form-control @error('token') is-invalid @enderror" placeholder="Ingrese el token" value="{{ old('token', $user->token ?? '') }}"> {{-- pattern="[A-Za-z0-9]+" --}}
-                        @error('token')
-                            <small class="text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-                </div>
+    <div class="form-section">
+        <h6><i class="fas fa-address-book mr-2"></i>Contacto comercial</h6>
+        <div class="row form-spaced">
+            <div class="form-group col-lg-6"><label for="email">Correo <span
+                        class="contact-required text-danger">*</span></label><input type="email" id="email"
+                    name="email" class="form-control" value="{{ old('email', $customer->email ?? '') }}"
+                    placeholder="contacto@empresa.com"><small class="text-muted">Para prospectos se requiere correo o
+                    teléfono.</small></div>
+            <div class="form-group col-lg-6"><label for="phone_number">Teléfono</label><input id="phone_number"
+                    name="phone_number" class="form-control"
+                    value="{{ old('phone_number', $customer->phone_number ?? '') }}" maxlength="9" inputmode="numeric"
+                    placeholder="999999999"></div>
+            <div class="form-group col-lg-6"><label for="lead_source">Origen del prospecto</label><select
+                    id="lead_source" name="lead_source" class="form-control">
+                    <option value="">No especificado</option>
+                    @foreach (['Referido', 'Página web', 'Redes sociales', 'Llamada', 'Evento', 'Campaña', 'Otro'] as $source)
+                        <option value="{{ $source }}">{{ $source }}</option>
+                    @endforeach
+                </select></div>
+            <div class="form-group col-lg-6"><label for="commercial_notes">Notas comerciales</label>
+                <textarea id="commercial_notes" name="commercial_notes" class="form-control" rows="2" maxlength="3000"></textarea>
             </div>
+            <div class="form-group col-12 mb-0">
+                <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input"
+                        id="marketing_consent" name="marketing_consent" value="1"><label
+                        class="custom-control-label" for="marketing_consent">Autorizó recibir comunicaciones
+                        comerciales</label></div><small class="text-muted">Debe existir una autorización real; sirve
+                    como base para futuras campañas.</small>
+            </div>
+        </div>
+    </div>
+
+    <div id="contactFields" style="display:none" class="form-section">
+        <h6><i class="fas fa-building mr-2"></i>Datos del contacto cliente</h6>
+        <div class="row form-spaced">
+            <div class="form-group col-lg-6"><label for="birthdate">Fecha de nacimiento</label><input type="date"
+                    id="birthdate" name="birthdate" class="form-control"></div>
+            <div class="form-group col-lg-6"><label for="address">Dirección</label><input id="address"
+                    name="address" class="form-control"></div>
+            <div class="form-group col-12"><label for="token">Token GPS OCSA <small class="text-muted">(solo si
+                        usa la integración)</small></label><input id="token" name="token" class="form-control"
+                    autocomplete="off"></div>
         </div>
     </div>
 </div>

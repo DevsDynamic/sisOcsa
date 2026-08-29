@@ -8,11 +8,11 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Auth;
-//use DataTables;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Services\SystemConfig;
 
 class OsinergminController extends Controller
@@ -51,12 +51,10 @@ class OsinergminController extends Controller
 
             try {
                 // Consultar datos de empresas
-                $response_companies = $client->get($url_companies, [
-                    'query' => [
-                        'key' => $client_api // Si la API lo requiere
-                    ] 
-                ]);
-                $companies_data = json_decode($response_companies->getBody(), true);
+                $companies_data = Cache::remember("ocsa:companies:{$client_ocsa->id}", now()->addMinutes(5), function () use ($client, $url_companies, $client_api) {
+                    $response = $client->get($url_companies, ['query' => ['key' => $client_api]]);
+                    return json_decode($response->getBody(), true);
+                });
 
                 // Crear un mapa de empresas para acceso rápido
                 $companies_info = [];
@@ -70,13 +68,13 @@ class OsinergminController extends Controller
                 }
 
                 // Consultar datos de unidades
-                $response_units = $client->get($url_units, [
-                    'query' => [
+                $response_data = Cache::remember("ocsa:units:{$client_ocsa->id}", now()->addSeconds(90), function () use ($client, $url_units, $client_api) {
+                    $response = $client->get($url_units, ['query' => [
                         'key' => $client_api,
                         'include' => ['ignition', 'battery_voltage', 'supply_voltage'],
-                    ]
-                ]);
-                $response_data = json_decode($response_units->getBody(), true);
+                    ]]);
+                    return json_decode($response->getBody(), true);
+                });
 
                 // Si la API devuelve un error
                 if (!is_array($response_data) || isset($response_data['error'])) {
@@ -133,7 +131,6 @@ class OsinergminController extends Controller
                         'last_update' => $unit['last_update'] ?? '', // Última actualización
                     ];
                 }
-
             } catch (\Exception $e) {
                 // Captura de errores en la petición
                 $response_result[] = [
@@ -147,47 +144,47 @@ class OsinergminController extends Controller
 
         // Devolver los datos agrupados por cliente, donde cada cliente tiene una sola empresa y múltiples unidades
         return Datatables::of(collect($grouped_data)->values())
-                        ->addIndexColumn()
-                        ->addColumn('action', function ($data_unit) {
-                            $buttons = '';
+            ->addIndexColumn()
+            ->addColumn('action', function ($data_unit) {
+                $buttons = '';
 
-                            $clientId = $data_unit['client_id'] ?? null;
+                $clientId = $data_unit['client_id'] ?? null;
 
-                            // Ver cliente
-                            if (auth()->user()->can('people.show')) {
-                                $buttons .= '<a href="" data-target="#modal-show" data-toggle="modal" data-id="' . $clientId . '">
+                // Ver cliente
+                if (auth()->user()->can('people.show')) {
+                    $buttons .= '<a href="" data-target="#modal-show" data-toggle="modal" data-id="' . $clientId . '">
                                                 <button class="btn btn-info btn-sm mr-1 mb-1" title="Ver cliente">
                                                     <i class="fas fa-eye"></i> Ver
                                                 </button>
                                             </a>';
-                            }
-                            // editar cliente
-                            if (auth()->user()->can('people.edit')) {
-                                $buttons .= '<a href="" data-target="#modal-edit" data-toggle="modal" data-id="' . $clientId . '">
+                }
+                // editar cliente
+                if (auth()->user()->can('people.edit')) {
+                    $buttons .= '<a href="" data-target="#modal-edit" data-toggle="modal" data-id="' . $clientId . '">
                                                 <button class="btn btn-warning btn-sm mr-1 mb-1" title="Editar cliente">
                                                     <i class="fas fa-edit"></i> Editar
                                                 </button>
                                             </a>';
-                            }
-                            // Cambiar estado del cliente (activar/inactivar)
-                            if (auth()->user()->can('people.change_status')) {                                    
-                                $buttons .= '<a href="" data-target="#modal-change-status" data-toggle="modal" data-id="' . $clientId . '" data-status="inactivar">
+                }
+                // Cambiar estado del cliente (activar/inactivar)
+                if (auth()->user()->can('people.change_status')) {
+                    $buttons .= '<a href="" data-target="#modal-change-status" data-toggle="modal" data-id="' . $clientId . '" data-status="inactivar">
                                                 <button class="btn btn-sm mr-1 mb-1 btn-danger" title="Inactivar cliente">
                                                     <i class="fas fa-times-circle"></i> Inactivar
                                                 </button>
                                             </a>';
-                            }
-                            
-                    
-                            // Mostrar botones o mensaje de sin permisos
-                            if (!empty($buttons)) {
-                                return $buttons;
-                            } else {
-                                return '<span class="badge badge-secondary">SIN PERMISOS</span>';
-                            }
-                        })
-                        ->rawColumns(['action'])
-                        ->make(true); 
+                }
+
+
+                // Mostrar botones o mensaje de sin permisos
+                if (!empty($buttons)) {
+                    return $buttons;
+                } else {
+                    return '<span class="badge badge-secondary">SIN PERMISOS</span>';
+                }
+            })
+            ->rawColumns(['action'])
+            ->make(true);
     }
 
     public function indexUnits()
@@ -200,28 +197,28 @@ class OsinergminController extends Controller
         try {
             // Obtener el usuario autenticado
             $user = Auth::user();
-    
+
             // Buscar al cliente en Person por su user_id y validar si tiene un token activo
             $person = Person::where('user_id', $user->id)
                 ->whereNotNull('token')
                 ->where('token', '<>', '')
                 ->where('status', '1')
                 ->first(); // Obtener solo un resultado
-    
+
             // Verificar si el cliente tiene un token
             if (!$person) {
                 return response()->json(['message' => 'Cliente sin token registrado o inactivo'], 400);
             }
-    
+
             // Token del cliente
             $client_api = $person->token;
-    
+
             // Instancia de Guzzle
             $client = new Client();
-    
+
             // API de Unidades
             $url_units = SystemConfig::ocsaBaseUrl() . config('services.ocsa.paths.units');
-    
+
             // Consultar datos de unidades
             $response_units = $client->get($url_units, [
                 'query' => ['key' => $client_api],
@@ -248,13 +245,6 @@ class OsinergminController extends Controller
                     'last_update' => $unit['last_update'] ?? '', // Última actualización
                 ];
             }
-
-            // Retornar los datos en formato JSON
-            // return response()->json([
-            //     'status' => 'SUCCESS',
-            //     'units' => $units_list
-            // ], 200);
-
         } catch (\Exception $e) {
             // Captura de errores en la petición
             return response()->json([
@@ -265,16 +255,16 @@ class OsinergminController extends Controller
 
         // Enviar los datos formateados a DataTables
         return DataTables::of(collect($units_list))
-                        ->addIndexColumn()
-                        ->addColumn('action', function ($data_unit) {
-                            return '<button class="btn btn-sm btn-info show-unit mt-2" 
+            ->addIndexColumn()
+            ->addColumn('action', function ($data_unit) {
+                return '<button class="btn btn-sm btn-info show-unit mt-2"
                                             data-id="' . $data_unit['uuid'] . '"
                                             data-plate="' . $data_unit['plate'] . '">
                                             <i class="fas fa-eye"></i> Ver
                                         </button>';
-                        })
-                        ->rawColumns(['action'])
-                        ->make(true);
+            })
+            ->rawColumns(['action'])
+            ->make(true);
     }
 
     public function indexTableUnitsV2()
@@ -300,7 +290,7 @@ class OsinergminController extends Controller
                 $body = json_decode((string) $response->getBody(), true);
 
                 if ($response->getStatusCode() !== 200 || isset($body['error'])) {
-                    $errors[] = $source->full_name . ': ' . ($body['error']['msg'] ?? 'HTTP '.$response->getStatusCode());
+                    $errors[] = $source->full_name . ': ' . ($body['error']['msg'] ?? 'HTTP ' . $response->getStatusCode());
                     continue;
                 }
 
@@ -316,12 +306,12 @@ class OsinergminController extends Controller
                 }
             }
         } catch (\Throwable $exception) {
-            $errors[] = 'Error al obtener unidades: '.$exception->getMessage();
+            $errors[] = 'Error al obtener unidades: ' . $exception->getMessage();
         }
 
         return DataTables::of(collect($units))
             ->addIndexColumn()
-            ->addColumn('action', fn ($unit) => '<button class="btn btn-sm btn-info show-unit" data-id="'.e($unit['uuid']).'" data-plate="'.e($unit['plate']).'"><i class="fas fa-eye"></i> Ver</button>')
+            ->addColumn('action', fn($unit) => '<button class="btn btn-sm btn-info show-unit" data-id="' . e($unit['uuid']) . '" data-plate="' . e($unit['plate']) . '"><i class="fas fa-eye"></i> Ver</button>')
             ->rawColumns(['action'])
             ->with('notice', implode(' | ', $errors))
             ->make(true);
@@ -331,17 +321,17 @@ class OsinergminController extends Controller
     {
         //
     }
-    
+
     public function store(Request $request)
     {
         //
     }
-    
+
     public function show(string $id)
     {
         //
     }
-    
+
     public function retransmissionUnits(Request $request, $id)
     {
         abort_if(!is_string($id) || strlen($id) > 255, 404);
@@ -357,13 +347,20 @@ class OsinergminController extends Controller
 
         // Buscar la unidad por su uuid y filtrar por el último mes
         $query = Osinergmin::where('uuid', '=', $id)
+            ->where('environment', SystemConfig::environment())
             ->whereBetween('created_at', [$fechaInicio, $fechaFin])
             ->orderBy('id', 'DESC');
+
+        if (! Auth::user()->is_system_owner) {
+            $personId = Auth::user()->person?->id;
+            abort_unless($personId, 403, 'El usuario no está asociado a un cliente.');
+            $query->where('person_id', $personId);
+        }
 
         // Verificar si existe la unidad
         return DataTables::eloquent($query)
             ->addIndexColumn()
-            ->addColumn('code', fn (Osinergmin $row) => 'OSIN' . str_pad((string) $row->id, 5, '0', STR_PAD_LEFT))
+            ->addColumn('code', fn(Osinergmin $row) => 'OSIN' . str_pad((string) $row->id, 5, '0', STR_PAD_LEFT))
             ->toJson();
     }
 
@@ -372,7 +369,7 @@ class OsinergminController extends Controller
     {
         //
     }
-    
+
     public function update(Request $request, string $id)
     {
         //

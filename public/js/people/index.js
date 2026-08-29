@@ -353,3 +353,21 @@ $('#modal-edit').on('hidden.bs.modal', function() {
     $('#formEditCustomer')[0].reset();
     clearFormErrors();
 });
+
+function loadPersonHistory(personId, modal) {
+    const container = modal.find('#crm-history');
+    if (!container.length) return;
+    container.html('<span class="text-muted"><i class="fas fa-spinner fa-spin mr-1"></i>Cargando historial...</span>');
+    $.get('/people/' + encodeURIComponent(personId) + '/history').done(function(items) {
+        if (!Array.isArray(items) || !items.length) return container.html('<span class="text-muted">Sin cambios de etapa registrados.</span>');
+        container.empty();
+        items.forEach(function(item) {
+            const row = $('<div class="crm-history-item">').append('<span class="crm-history-dot"></span>'), content = $('<div>');
+            $('<strong>').text((item.from || 'Sin etapa') + ' → ' + (item.to || 'Sin etapa')).appendTo(content);
+            $('<small>').text((item.date || '') + (item.changed_by ? ' · ' + item.changed_by : '')).appendTo(content);
+            $('<p>').text(item.reason || 'Cambio de etapa').appendTo(content);
+            if (item.notes) $('<p class="text-muted mb-0">').text(item.notes).appendTo(content);
+            row.append(content).appendTo(container);
+        });
+    }).fail(function() { container.html('<span class="text-danger">No se pudo consultar el historial.</span>'); });
+}

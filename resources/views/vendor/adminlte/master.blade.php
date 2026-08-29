@@ -23,7 +23,7 @@
     @yield('adminlte_css_pre')
 
     {{-- Base Stylesheets (depends on Laravel asset bundling tool) --}}
-    @if(config('adminlte.enabled_laravel_mix', false))
+    @if (config('adminlte.enabled_laravel_mix', false))
         <link rel="stylesheet" href="{{ mix(config('adminlte.laravel_mix_css_path', 'css/app.css')) }}">
     @else
         @switch(config('adminlte.laravel_asset_bundling', false))
@@ -44,8 +44,9 @@
                 <link rel="stylesheet" href="{{ asset('vendor/overlayScrollbars/css/OverlayScrollbars.min.css') }}">
                 <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
 
-                @if(config('adminlte.google_fonts.allowed', true))
-                    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+                @if (config('adminlte.google_fonts.allowed', true))
+                    <link rel="stylesheet"
+                        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
                 @endif
         @endswitch
     @endif
@@ -54,8 +55,8 @@
     @include('adminlte::plugins', ['type' => 'css'])
 
     {{-- Livewire Styles --}}
-    @if(config('adminlte.livewire'))
-        @if(intval(app()->version()) >= 7)
+    @if (config('adminlte.livewire'))
+        @if (intval(app()->version()) >= 7)
             @livewireStyles
         @else
             <livewire:styles />
@@ -64,19 +65,29 @@
 
     {{-- Custom Stylesheets (post AdminLTE) --}}
     @yield('adminlte_css')
+    <link rel="stylesheet" href="{{ asset('css/ocsa-ui.css') }}">
     @auth
         <style>
-            .global-environment-badge{position:fixed;top:9px;right:240px;z-index:1040;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.06em;box-shadow:0 3px 12px rgba(0,0,0,.12)}
-            .global-environment-badge.demo{background:#ffc107;color:#332701}.global-environment-badge.production{background:#28a745;color:#fff}.global-environment-badge:hover{color:inherit;text-decoration:none;transform:translateY(-1px)}
-            .content-wrapper{background:#f4f7fb}.card{border-radius:12px}.btn{border-radius:8px}.main-sidebar{box-shadow:4px 0 18px rgba(0,0,0,.08)!important}
-            @media(max-width:767px){
-                .global-environment-badge{top:auto;right:14px;bottom:14px;font-size:9px;padding:7px 10px;z-index:1050}
+            .content-wrapper {
+                background: #f4f7fb
+            }
+
+            .card {
+                border-radius: 12px
+            }
+
+            .btn {
+                border-radius: 8px
+            }
+
+            .main-sidebar {
+                box-shadow: 4px 0 18px rgba(0, 0, 0, .08) !important
             }
         </style>
     @endauth
 
     {{-- Favicon --}}
-    @if(config('adminlte.use_ico_only'))
+    @if (config('adminlte.use_ico_only'))
         <link rel="shortcut icon" href="{{ asset('favicons/favicon.ico') }}" />
     @elseif(config('adminlte.use_full_favicon'))
         <link rel="shortcut icon" href="{{ asset('favicons/favicon.ico') }}" />
@@ -102,12 +113,12 @@
 
 <style>
     body {
-      height: 800px;
-      background-image: url("https://png.pngtree.com/background/20250102/original/pngtree-blue-3d-location-pin-sign-icon-and-gps-navigation-map-picture-image_15587901.jpg");
-      background-size: cover;
-      background-repeat: no-repeat;
-      background-position: center center;
-      background-attachment: fixed;
+        height: 800px;
+        background-image: url("https://png.pngtree.com/background/20250102/original/pngtree-blue-3d-location-pin-sign-icon-and-gps-navigation-map-picture-image_15587901.jpg");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center center;
+        background-attachment: fixed;
     }
 </style>
 
@@ -116,22 +127,31 @@
 
     @auth
         @php($globalEnvironment = \App\Services\SystemConfig::environment())
-        @can('system.integrations.manage')
-            <a href="{{ route('system-settings.edit') }}" class="global-environment-badge {{ $globalEnvironment === 'production' ? 'production' : 'demo' }}" title="Cambiar ambiente">
-                <i class="fas fa-circle mr-1"></i>{{ $globalEnvironment === 'production' ? 'PRODUCCIÓN' : 'DEMO' }}
-            </a>
-        @else
-            <div class="global-environment-badge {{ $globalEnvironment === 'production' ? 'production' : 'demo' }}">
-                <i class="fas fa-circle mr-1"></i>{{ $globalEnvironment === 'production' ? 'PRODUCCIÓN' : 'DEMO' }}
+        <div id="environment-navbar-slot" class="d-none">
+            <div class="env-navbar-item">
+                @can('system.integrations.manage')
+                    <a href="{{ route('system-settings.edit', ['section' => 'integrations']) }}"
+                        class="environment-control {{ $globalEnvironment === 'production' ? 'production' : 'demo' }}"
+                        title="Abrir configuración de ambiente">
+                    @else
+                        <span class="environment-control {{ $globalEnvironment === 'production' ? 'production' : 'demo' }}"
+                            title="Ambiente configurado por el dueño del sistema">
+                        @endcan
+                        <span class="environment-label-prefix">AMBIENTE</span><span class="environment-switch"
+                            aria-hidden="true"></span><span
+                            class="environment-label">{{ $globalEnvironment === 'production' ? 'PROD' : 'DEMO' }}</span>
+                        @can('system.integrations.manage')
+                </a>@else</span>
+                @endcan
             </div>
-        @endcan
+        </div>
     @endauth
 
     {{-- Body Content --}}
     @yield('body')
 
     {{-- Base Scripts (depends on Laravel asset bundling tool) --}}
-    @if(config('adminlte.enabled_laravel_mix', false))
+    @if (config('adminlte.enabled_laravel_mix', false))
         <script src="{{ mix(config('adminlte.laravel_mix_js_path', 'js/app.js')) }}"></script>
     @else
         @switch(config('adminlte.laravel_asset_bundling', false))
@@ -155,8 +175,8 @@
     @include('adminlte::plugins', ['type' => 'js'])
 
     {{-- Livewire Script --}}
-    @if(config('adminlte.livewire'))
-        @if(intval(app()->version()) >= 7)
+    @if (config('adminlte.livewire'))
+        @if (intval(app()->version()) >= 7)
             @livewireScripts
         @else
             <livewire:scripts />
@@ -165,6 +185,20 @@
 
     {{-- Custom Scripts --}}
     @yield('adminlte_js')
+    @auth
+        <script>
+            (function() {
+                var slot = document.getElementById('environment-navbar-slot');
+                var navbar = document.querySelector('.main-header .navbar-nav.ml-auto');
+                if (slot && navbar) {
+                    var item = slot.firstElementChild;
+                    navbar.insertBefore(item, navbar.firstChild);
+                    slot.remove();
+                }
+            })
+            ();
+        </script>
+    @endauth
 
 </body>
 

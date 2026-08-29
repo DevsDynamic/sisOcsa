@@ -23,9 +23,9 @@ use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\IntegrationMonitorController;
 use App\Http\Controllers\PublicIntegrationStatusController;
 
-    Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('login', [LoginController::class, 'login']);
-    Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('login', [LoginController::class, 'login']);
+Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard.index') : redirect()->route('login');
@@ -41,9 +41,6 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    // Route::get('/dashboard', function () {
-    //     return view('dashboard');
-    // })->name('dashboard');
     Route::resource('dashboard', DashboardController::class)->names('dashboard');
     Route::get('mi-perfil', [ProfileController::class, 'edit'])->name('profile.account');
     Route::put('mi-perfil', [ProfileController::class, 'update'])->name('profile.account.update');
@@ -81,16 +78,10 @@ Route::middleware([
 
     //ROLES
     Route::resource('roles', RoleController::class)->names('roles');
-    Route::get('roles.index-table', [RoleController::class, 'indexTable'])->name('roles.index-table');
-    Route::post('/roles/change-status', [RoleController::class, 'changeStatus'])->name('roles.change-status');
-    Route::post('/roles/assign-role', [RoleController::class, 'assignRole'])->name('roles.assign-role');//Asignar rol a un usuario
-    Route::post('/roles/assign-users-role', [RoleController::class, 'assignUsersRole'])->name('roles.assign-users-role');//Asignar varios usuarios a un rol 
-
-    Route::resource('roles', RoleController::class)->names('roles');
     Route::get('roles.index/data', [RoleController::class, 'indexTable'])->name('roles.index-data');
     Route::post('roles/change-status', [RoleController::class, 'changeStatus'])->name('roles.change-status');
-    Route::post('roles/assign-role', [RoleController::class, 'assignRole'])->name('roles.assign-role');//Asignar rol a un usuario
-    Route::post('roles/assign-users-role', [RoleController::class, 'assignUsersRole'])->name('roles.assign-users-role');//Asignar rol a varios usuarios 
+    Route::post('roles/assign-role', [RoleController::class, 'assignRole'])->name('roles.assign-role'); //Asignar rol a un usuario
+    Route::post('roles/assign-users-role', [RoleController::class, 'assignUsersRole'])->name('roles.assign-users-role'); //Asignar rol a varios usuarios
 
     //TYPE PEOPLE//TIPOS DE PERSONAS
     Route::resource('type-people', TypePersonController::class)->names('type-people');
@@ -105,6 +96,8 @@ Route::middleware([
     Route::get('people.index-cp', [PersonController::class, 'indexCP'])->name('people.index-cp');
     Route::get('people.index-cp/data', [PersonController::class, 'indexTableCP'])->name('people.index-cp-data');
     Route::post('/people/change-status', [PersonController::class, 'changeStatus'])->name('people.change-status');
+    Route::post('/people/{person}/convert', [PersonController::class, 'convert'])->name('people.convert');
+    Route::get('/people/{person}/history', [PersonController::class, 'history'])->name('people.history');
 
     //OSINERGMIN//RETRANSMISION DE OSINERGMIN
     Route::resource('osinergmins', OsinergminController::class)->names('osinergmins'); //
@@ -118,10 +111,4 @@ Route::middleware([
     Route::get('reports.osinergmin', [ReportController::class, 'reportOsinergmin'])->name('reports.osinergmin');
     Route::get('reports.view-osinergmin', [ReportController::class, 'viewReportOsinergmin'])->name('reports.view-osinergmin');
     Route::get('reports.export-osinergmin', [ReportController::class, 'exportOsinergmin'])->name('reports.export-osinergmin');
-
-    // Pruebas de carga y lectura de imágenes
-    Route::get('/upload', [ImageController::class, 'showUploadForm'])->name('image.form');
-    Route::post('/upload', [ImageController::class, 'uploadImage'])->name('image.upload');
-
-    Route::post('/send-whatsapp', [WhatsAppController::class, 'sendMessage']);
 });

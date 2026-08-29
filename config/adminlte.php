@@ -152,10 +152,10 @@ return [
     |
     */
 
-    'layout_topnav' => null,//Hacer el menu en la barra superior
+    'layout_topnav' => null, //Hacer el menu en la barra superior
     'layout_boxed' => null,
     'layout_fixed_sidebar' => null,
-    'layout_fixed_navbar' => null,
+    'layout_fixed_navbar' => true,
     'layout_fixed_footer' => null,
     'layout_dark_mode' => null,
 
@@ -196,10 +196,10 @@ return [
     'classes_content_wrapper' => '',
     'classes_content_header' => '',
     'classes_content' => '',
-    'classes_sidebar' => 'sidebar-dark-primary elevation-4',//light
-    'classes_sidebar_nav' => 'nav-child-indent',//nav-flat//sangria a sub menu
+    'classes_sidebar' => 'sidebar-dark-primary elevation-4', //light
+    'classes_sidebar_nav' => 'nav-child-indent', //nav-flat//sangria a sub menu
     'classes_topnav' => 'navbar-white navbar-light',
-    'classes_topnav_nav' => 'navbar-expand',//-md
+    'classes_topnav_nav' => 'navbar-expand', //-md
     'classes_topnav_container' => 'container',
 
     /*
@@ -215,7 +215,7 @@ return [
     */
 
     'sidebar_mini' => 'lg',
-    'sidebar_collapse' => false,//modo contraído de la barra lateral de forma predeterminada
+    'sidebar_collapse' => false, //modo contraído de la barra lateral de forma predeterminada
     'sidebar_collapse_auto_size' => false,
     'sidebar_collapse_remember' => false,
     'sidebar_collapse_remember_no_transition' => true,
@@ -257,7 +257,7 @@ return [
     */
 
     'use_route_url' => false,
-    'dashboard_url' => 'dashboard',//home
+    'dashboard_url' => 'dashboard', //home
     'logout_url' => 'logout',
     'login_url' => 'login',
     'register_url' => false,
@@ -328,7 +328,7 @@ return [
         ],
         ['header' => 'MODULOS'],
         [
-            'text' => 'Personas',            
+            'text' => 'Personas',
             'icon' => 'fas fa-people-arrows',
             'submenu' => [
                 [
@@ -340,7 +340,7 @@ return [
                             'text' => 'Administradores',
                             'icon' => 'fas fa-users',
                             'route' => 'users.index-admin',
-                            'active'  => ['users.index-admin'], 
+                            'active'  => ['users.index-admin'],
                         ],
                         [
                             'text' => 'Clientes',
@@ -396,12 +396,12 @@ return [
             ],
         ],
         [
-            'text' => 'Retransmisión',            
+            'text' => 'Retransmisión',
             'icon' => 'fas fa-broadcast-tower',
             'submenu' => [
                 [
                     'text' => 'OSINERGMIN',
-                    'icon' => 'fab fa-osi',//fas fa-coins//fas fa-hand-holding-usd
+                    'icon' => 'fab fa-osi', //fas fa-coins//fas fa-hand-holding-usd
                     'submenu' => [
                         // RETRANSMISIONES TOTALES
                         [
@@ -427,7 +427,7 @@ return [
                     'text' => 'OSITRAN (Próximamente)',
                     'icon' => 'fab fa-watchman-monitoring',
                     'url' => '#',
-                ],                
+                ],
             ],
         ],
         // [
@@ -444,14 +444,14 @@ return [
             'text' => 'Reportes',
             'icon' => 'fas fa-print',
             'submenu' => [
-                    [
-                        'text'    => 'Osinergmin',
-                        'icon'    => 'fas fa-stopwatch',
-                        'route'     => 'reports.osinergmin',
-                        // 'can' => 'reports.markings'
-                    ],
-            ]   
-            
+                [
+                    'text'    => 'Osinergmin',
+                    'icon'    => 'fas fa-stopwatch',
+                    'route'     => 'reports.osinergmin',
+                    // 'can' => 'reports.markings'
+                ],
+            ]
+
         ],
         // ['header' => 'labels'],
         // [

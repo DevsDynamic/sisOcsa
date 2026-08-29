@@ -5,10 +5,7 @@
 @section('content_header')
     <h1>CLIENTES POTENCIALES
         @can('people.create')
-            <a href="#" class="btn btn-success" 
-                data-target="#modal-create" 
-                data-toggle="modal" 
-                data-type="cp">
+            <a href="#" class="btn btn-success" data-target="#modal-create" data-toggle="modal" data-type="cp">
                 <i class="fas fa-plus-circle"></i> Agregar
             </a>
         @endcan
@@ -47,6 +44,7 @@
             @include('people.modals.show')
             @include('people.modals.edit')
             @include('people.modals.change-status')
+            @include('people.modals.convert-prospect')
         </div>
     </div>
 @stop
@@ -60,7 +58,7 @@
     <script src="{{ asset('js/people/index.js') }}"></script>
 
     <script>
-        $(document).ready(function() {    
+        $(document).ready(function() {
             // Inicialización de DataTables
             $('#tablaPrincipal').DataTable({
                 responsive: true,
@@ -68,35 +66,38 @@
                 processing: true,
                 serverSide: true,
                 searching: true,
-                order: [[ 0, "desc" ]],
-                ajax: "{{ route('people.index-cp-data') }}",// Ruta para obtener los datos por AJAX
-                columns: [
-                    { data: 'id', name: 'id', // ID
-                        render: function ( data, type, row, meta ) {             
+                order: [
+                    [0, "desc"]
+                ],
+                ajax: "{{ route('people.index-cp-data') }}", // Ruta para obtener los datos por AJAX
+                columns: [{
+                        data: 'id',
+                        name: 'id', // ID
+                        render: function(data, type, row, meta) {
                             return 'CLI' + ('00000' + row.id).slice(-5);
                         }
                     },
                     { // Número de documento
-                        data: 'document_number', 
-                        name: 'document_number' 
+                        data: 'document_number',
+                        name: 'document_number'
                     },
                     { // Nombre completo
-                        data: 'full_name', 
-                        name: 'full_name' 
+                        data: 'full_name',
+                        name: 'full_name'
                     },
                     // { // Empresa
                     //     data: 'company', 
                     //     name: 'company' 
                     // },
                     { // Tipo de cliente
-                        data: 'type_person', 
-                        name: 'type_person' 
+                        data: 'type_person',
+                        name: 'type_person'
                     },
                     { // Estado
-                        data: 'status', 
+                        data: 'status',
                         name: 'status',
                         className: 'dt-center', // Clase específica para DataTables
-                        render: function ( data, type, row, meta ) {
+                        render: function(data, type, row, meta) {
                             if (row.status == '1') {
                                 return '<span class="badge badge-success">Activo</span>';
                             } else if (row.status == '0') {
@@ -107,9 +108,9 @@
                         }
                     },
                     { // Botones
-                        data: 'action', 
-                        name: 'action', 
-                        orderable: false, 
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
                         searchable: false
                     }
                 ],
@@ -122,14 +123,14 @@
                     "infoPostFix": "",
                     "thousands": ",",
                     "lengthMenu": "Mostrar " +
-                                    `<select class="custom-select custom-select-sm form-control form-control-sm">
+                        `<select class="custom-select custom-select-sm form-control form-control-sm">
                                         <option value = '10'>10</option>
                                         <option value = '25'>25</option>
                                         <option value = '50'>50</option>
                                         <option value = '100'>100</option>
                                         <option value = '-1'>Todo</option>
                                     </select>` +
-                                    " Registros",
+                        " Registros",
                     "loadingRecords": "Cargando...",
                     "processing": "Procesando...",
                     "search": "Buscar:",
@@ -144,7 +145,7 @@
             });
 
             // Configuración del MODAL para CREAR nuevo registro
-            $('#modal-create').on('show.bs.modal', function (event) {
+            $('#modal-create').on('show.bs.modal', function(event) {
                 //Almacenar datos
                 var button = $(event.relatedTarget);
                 var entity = "cliente";
@@ -153,10 +154,11 @@
 
                 // Configurar el modal con los datos del cliente
                 var modal = $(this);
-                modal.find('.texttitle').text((entity).toUpperCase()); // Cambiar .text() por .val() para input
+                modal.find('.texttitle').text((entity)
+            .toUpperCase()); // Cambiar .text() por .val() para input
                 $('#modalType').val(type); // Asignar el valor al campo oculto dentro del modal
                 $('#toggleSearchContainer').addClass('hidden').hide();
-                
+
                 // Inicialmente el input debe tener las esquinas redondeadas
                 $('#document_number').css({
                     'border-top-right-radius': '.25rem',
@@ -168,17 +170,18 @@
             });
 
             // Configuración del MODAL para VISUALIZAR registro
-            $('#modal-show').on('show.bs.modal', function (event) {
+            $('#modal-show').on('show.bs.modal', function(event) {
                 //Almacenar datos
-                var button = $(event.relatedTarget);                
+                var button = $(event.relatedTarget);
                 var id = button.data('id');
-                var entity = "Cliente";                
+                var entity = "Cliente";
                 console.log('open modal show');
 
                 // Configurar el modal con los datos del cliente
                 var modal = $(this);
                 var formattedId = 'CLI' + ('00000' + id).slice(-5);
-                modal.find('.texttitle').text((entity).toUpperCase()); // Cambiar .text() por .val() para input
+                modal.find('.texttitle').text((entity)
+            .toUpperCase()); // Cambiar .text() por .val() para input
                 modal.find('.entity').text(entity);
                 modal.find('.textcode').text(formattedId);
 
@@ -189,7 +192,8 @@
                 $.ajax({
                     url: url,
                     method: 'GET',
-                    success: function (data) {
+                    success: function(data) {
+                        loadPersonHistory(id, modal);
                         console.log(data.html);
                         // Aquí llenamos el modal con los datos recibidos
                         modal.find('#type_document').val(data.html.type_document);
@@ -206,7 +210,8 @@
                             modal.find('#phone_number').val(data.html.phone_number);
                             modal.find('#token').val(data.html.token);
                         } else {
-                            contactFields.hide(); // Asegurar que se oculte cuando no es contacto
+                            contactFields
+                        .hide(); // Asegurar que se oculte cuando no es contacto
                         }
                     },
                     error: function(xhr, status, error) {
@@ -223,9 +228,9 @@
             });
 
             // Configuración del MODAL para EDITAR registro
-            $('#modal-edit').on('show.bs.modal', function (event) {
+            $('#modal-edit').on('show.bs.modal', function(event) {
                 //Almacenar datos
-                var button = $(event.relatedTarget);                
+                var button = $(event.relatedTarget);
                 var id = button.data('id');
                 var entity = "cliente";
                 var type = button.data('type'); // Obtener el valor de data-type
@@ -235,7 +240,8 @@
                 var modal = $(this);
                 modal.find('#hiddenIDCustomer').val(id);
                 var formattedId = 'CLI' + ('00000' + id).slice(-5);
-                modal.find('.texttitle').text((entity).toUpperCase()); // Cambiar .text() por .val() para input
+                modal.find('.texttitle').text((entity)
+            .toUpperCase()); // Cambiar .text() por .val() para input
                 modal.find('.entity').text(entity);
                 modal.find('#modalType').val(type); // Asignar el valor al campo oculto dentro del modal
                 modal.find('.textcode').text(formattedId);
@@ -247,14 +253,22 @@
                 $.ajax({
                     url: url,
                     method: 'GET',
-                    success: function (data) {
+                    success: function(data) {
                         console.log(data.html);
                         // Aquí llenamos el modal con los datos recibidos
-                        modal.find('#type_document').val(data.html.type_document_id).trigger('change');
+                        modal.find('#type_document').val(data.html.type_document_id).trigger(
+                            'change');
                         modal.find('#document_number').val(data.html.document_number);
                         modal.find('#full_name').val(data.html.full_name);
-                        modal.find('#type_person').val(data.html.type_person_id).trigger('change');
-                        selectTypePerson(modal);  // Ejecutar la función en el modal de edición
+                        modal.find('#type_person').val(data.html.type_person_id).trigger(
+                            'change');
+                        modal.find('#email').val(data.html.email);
+                        modal.find('#phone_number').val(data.html.phone_number);
+                        modal.find('#lead_source').val(data.html.lead_source);
+                        modal.find('#commercial_notes').val(data.html.commercial_notes);
+                        modal.find('#marketing_consent').prop('checked', !!data.html
+                            .marketing_consent);
+                        selectTypePerson(modal); // Ejecutar la función en el modal de edición
                         evaluateTypePerson(modal); // Evaluar si se deben mostrar los campos
                         // Verificar y mostrar los campos al cargar la página si es contcato
                         var contactFields = modal.find("#contactFields");
@@ -266,7 +280,8 @@
                             modal.find('#phone_number').val(data.html.phone_number);
                             modal.find('#token').val(data.html.token);
                         } else {
-                            contactFields.hide(); // Asegurar que se oculte cuando no es contacto
+                            contactFields
+                        .hide(); // Asegurar que se oculte cuando no es contacto
                         }
                     },
                     error: function(xhr, status, error) {
@@ -279,13 +294,13 @@
                             showConfirmButton: true
                         });
                     }
-                }); 
-                
-                
+                });
+
+
             });
 
             // Configuración del modal de CAMBIO DE ESTADO de tipo de cliente (activar/inactivar)
-            $('#modal-change-status').on('show.bs.modal', function (event) {
+            $('#modal-change-status').on('show.bs.modal', function(event) {
                 var button = $(event.relatedTarget);
                 var CustomerId = button.data('id');
                 var statusAction = button.data('status');
@@ -296,7 +311,7 @@
                 var formattedId = 'CLI' + ('00000' + CustomerId).slice(-5);
                 var statusText = (statusAction === 'activar') ? 'activar' : 'inactivar';
 
-                modal.find('.texttitle').text((statusText+ ' ' + entity).toUpperCase());
+                modal.find('.texttitle').text((statusText + ' ' + entity).toUpperCase());
                 modal.find('.entity').text(entity);
                 modal.find('.textstatus').text(statusText);
                 modal.find('.textcode').text(formattedId);
@@ -323,11 +338,11 @@
                 } else {
                     confirmButton.addClass('btn-danger');
                     icon.addClass('fas fa-user-times');
-                }                
+                }
             });
 
             // Función para CREAR // Manejar el formulario crear uno cliente
-            $('#formCreateCustomer').off('submit').on('submit', function (e) {
+            $('#formCreateCustomer').off('submit').on('submit', function(e) {
                 e.preventDefault();
                 console.log('clic button save create customer');
 
@@ -338,31 +353,37 @@
                 var typeDocument = $('#type_document').val();
                 var documentNumber = $('#document_number').val();
                 var selectedOption = $('#type_document option:selected');
-                var maxLength = selectedOption.data('max-length'); // Obtener el maxLength del tipo de documento seleccionado
+                var maxLength = selectedOption.data(
+                'max-length'); // Obtener el maxLength del tipo de documento seleccionado
                 // Obtener el texto de la opción seleccionada
-                var typeDocumentText = $('#type_document option:selected').text().toLowerCase(); // Convertir a minúsculas                      
+                var typeDocumentText = $('#type_document option:selected').text()
+            .toLowerCase(); // Convertir a minúsculas
 
-                if ((typeDocumentText == 'dni' || typeDocumentText == 'ruc') && documentNumber.length != maxLength) {
+                if ((typeDocumentText == 'dni' || typeDocumentText == 'ruc') && documentNumber.length !=
+                    maxLength) {
                     // Mostrar mensaje de alerta
                     Swal.fire({
                         position: 'center',
                         icon: 'info',
                         title: 'Alerta',
-                        text: 'El ' + typeDocumentText.toUpperCase() + ' debe contener ' + maxLength + ' caracteres.',
+                        text: 'El ' + typeDocumentText.toUpperCase() + ' debe contener ' +
+                            maxLength + ' caracteres.',
                         timer: 2000
                     });
-                    console.log('El ' + typeDocumentText.toUpperCase() + ' debe contener ' + maxLength + ' caracteres.');
+                    console.log('El ' + typeDocumentText.toUpperCase() + ' debe contener ' + maxLength +
+                        ' caracteres.');
                 } else {
                     $.ajax({
                         type: 'POST',
                         url: '{{ route('people.store') }}', // Ajusta la ruta según tu configuración
-                        data: formData, 
+                        data: formData,
                         processData: false,
-                        contentType: false,                   
+                        contentType: false,
                         success: function(data, textStatus, xhr) {
                             if (xhr.status === 200) { // Verifica si el código de estado es 200
                                 $('#modal-create').modal('hide');
-                                $('#tablaPrincipal').DataTable().ajax.reload(); // Actualiza la tabla si es necesario
+                                $('#tablaPrincipal').DataTable().ajax
+                            .reload(); // Actualiza la tabla si es necesario
                                 console.log(data);
 
                                 // Mostrar alerta de éxito
@@ -389,7 +410,7 @@
                             // Si el código de estado es 422, mostrar los errores de validación
                             if (xhr.status === 422) {
                                 var errors = xhr.responseJSON.errors;
-                                showFormErrors('#formCreateCustomer',errors);
+                                showFormErrors('#formCreateCustomer', errors);
                                 //showFormErrorsCreate(errors);
                             } else {
                                 // En caso de error 500, mostrar el mensaje de error general
@@ -398,34 +419,35 @@
                                     position: 'center',
                                     icon: 'error',
                                     title: 'Error',
-                                    text: 'Ocurrió un error al agregar el registro: ' + errorMessage + '. Inténtelo de nuevo.',
+                                    text: 'Ocurrió un error al agregar el registro: ' +
+                                        errorMessage + '. Inténtelo de nuevo.',
                                     showConfirmButton: true
                                 });
                                 console.log(errorMessage);
                             }
                         }
                     });
-                }                
+                }
             });
 
             // Función para EDITAR cliente // Manejar el formulario editar registro
-            $('#formEditCustomer').off('submit').on('submit', function (e) {
-                    e.preventDefault();
-                    console.log('clic button save edit customer');
+            $('#formEditCustomer').off('submit').on('submit', function(e) {
+                e.preventDefault();
+                console.log('clic button save edit customer');
 
-                    var datainfo = $('#formEditCustomer').serialize();
-                    console.log(datainfo);
-                    var formData = new FormData(this);
-                    formData.append('_method', 'PUT'); // Agregar método PUT para la actualización
-                    
-                    var CustomerId = $("#hiddenIDCustomer").val();
-                    console.log('hiddenIDCustomer: '+CustomerId);                    
+                var datainfo = $('#formEditCustomer').serialize();
+                console.log(datainfo);
+                var formData = new FormData(this);
+                formData.append('_method', 'PUT'); // Agregar método PUT para la actualización
 
-                    // Construir la URL para la solicitud AJAX utilizando el ID del cliente
-                    var url = "{{ route('people.update', ':id') }}";
-                    url = url.replace(':id', CustomerId);
+                var CustomerId = $("#hiddenIDCustomer").val();
+                console.log('hiddenIDCustomer: ' + CustomerId);
 
-                $.ajax({                    
+                // Construir la URL para la solicitud AJAX utilizando el ID del cliente
+                var url = "{{ route('people.update', ':id') }}";
+                url = url.replace(':id', CustomerId);
+
+                $.ajax({
                     url: url, // Ajusta la ruta según tu configuración
                     type: 'POST',
                     data: formData,
@@ -434,7 +456,8 @@
                     success: function(data, textStatus, xhr) {
                         if (xhr.status === 200) { // Verifica si el código de estado es 200
                             $('#modal-edit').modal('hide');
-                            $('#tablaPrincipal').DataTable().ajax.reload(); // Actualiza la tabla si es necesario
+                            $('#tablaPrincipal').DataTable().ajax
+                        .reload(); // Actualiza la tabla si es necesario
                             console.log(data);
 
                             // Mostrar alerta de éxito
@@ -468,7 +491,8 @@
                                 position: 'center',
                                 icon: 'error',
                                 title: 'Error',
-                                text: 'Ocurrió un error al editar el tipo de cliente: ' + errorMessage + '. Inténtelo de nuevo.',
+                                text: 'Ocurrió un error al editar el tipo de cliente: ' +
+                                    errorMessage + '. Inténtelo de nuevo.',
                                 showConfirmButton: true
                             });
                             console.log(errorMessage);
@@ -478,7 +502,7 @@
             });
 
             // Función para cambiar el estado de tipo de cliente (activar/inactivar) // Manejar el formulario de cambio de estado
-            $('#formChangeStatus').off('submit').on('submit', function (e) {
+            $('#formChangeStatus').off('submit').on('submit', function(e) {
                 e.preventDefault();
                 console.log('clic button save change status');
 
@@ -515,20 +539,58 @@
                                 showConfirmButton: true
                             });
                             console.log(data.error);
-                        }                        
+                        }
                     },
                     error: function(xhr, status, error) {
                         Swal.fire({
                             position: 'center',
                             icon: 'error',
                             title: 'Error',
-                            text: 'Ocurrió un error al cambiar el estado al cliente: ' + error + '. Inténtelo de nuevo.',
+                            text: 'Ocurrió un error al cambiar el estado al cliente: ' +
+                                error + '. Inténtelo de nuevo.',
                             showConfirmButton: true
                         });
                         console.log(error);
                         $('#modal-change-status').modal('hide');
                     }
                 });
+            });
+        });
+
+        $('#modal-convert-prospect').on('show.bs.modal', function(event) {
+            const button = $(event.relatedTarget),
+                modal = $(this),
+                form = modal.find('form');
+            form.attr('action', @json(url('/people')) + '/' + button.data('id') + '/convert');
+            form[0].reset();
+            modal.find('.prospect-name').text(button.data('name'));
+            modal.find('[name=email]').val(button.data('email') || '');
+            modal.find('[name=phone_number]').val(button.data('phone') || '');
+            modal.find('.is-invalid').removeClass('is-invalid');
+            modal.find('#convert-errors').addClass('d-none').empty();
+        });
+        $('#form-convert-prospect').on('submit', function(event) {
+            event.preventDefault();
+            const form = $(this),
+                submit = form.find('[type=submit]');
+            submit.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Convirtiendo');
+            $.post(form.attr('action'), form.serialize()).done(function(response) {
+                $('#modal-convert-prospect').modal('hide');
+                $('#tablaPrincipal').DataTable().ajax.reload(null, false);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Conversión completada',
+                    text: response.success
+                });
+            }).fail(function(xhr) {
+                const errors = xhr.responseJSON && xhr.responseJSON.errors;
+                const message = errors ? Object.values(errors).flat().join(' ') : (xhr.responseJSON && xhr
+                    .responseJSON.message ? xhr.responseJSON.message :
+                    'No se pudo completar la conversión.');
+                $('#convert-errors').removeClass('d-none').text(message);
+            }).always(function() {
+                submit.prop('disabled', false).html(
+                    '<i class="fas fa-user-check mr-1"></i>Confirmar conversión');
             });
         });
     </script>
