@@ -195,9 +195,9 @@ class TaskController extends Controller
                                 'plate' => $value['number'],
                                 'speed' => (float) $value['speed'],
                                 'position' => [
-                                    'latitude' => $value['lat'],
-                                    'longitude' => $value['lng'],
-                                    'altitude' => "169"
+                                    'latitude' => (float) $value['lat'],
+                                    'longitude' => (float) $value['lng'],
+                                    'altitude' => 169.0,
                                 ],
                                 'gpsDate' => $Date,
                                 'tokenTrama' => $token_trama,
