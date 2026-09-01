@@ -56,7 +56,7 @@ class IntegrationMonitorController extends Controller
             if (method_exists($response, 'getStatusCode') && $response->getStatusCode() === 409) {
                 return back()->with('warning', 'No se inició: existe otra retransmisión en curso.');
             }
-            $results = method_exists($response, 'getData') ? ($response->getData()['resu'] ?? []) : [];
+            $results = method_exists($response, 'getData') ? ($response->getData(true)['resu'] ?? []) : [];
             $success = collect($results)->where('status', 'SUCCESS')->count();
             $errors = collect($results)->where('status', 'ERROR')->count();
             $blocked = collect($results)->where('status', 'WAF_BLOCKED')->count();

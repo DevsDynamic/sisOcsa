@@ -33,7 +33,7 @@ class SendOsinergminData extends Command
         }
 
         $results = method_exists($response, 'getData')
-            ? ($response->getData()['resu'] ?? [])
+            ? ($response->getData(true)['resu'] ?? [])
             : [];
         $successCount = collect($results)->where('status', 'SUCCESS')->count();
         $errorResults = collect($results)->whereIn('status', [
