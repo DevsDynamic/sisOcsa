@@ -42,6 +42,7 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+    Route::get('dashboard/status', [DashboardController::class, 'status'])->middleware('throttle:30,1')->name('dashboard.status');
     Route::get('mi-perfil', [ProfileController::class, 'edit'])->name('profile.account');
     Route::put('mi-perfil', [ProfileController::class, 'update'])->name('profile.account.update');
     Route::put('mi-perfil/password', [ProfileController::class, 'password'])->name('profile.account.password');

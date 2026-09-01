@@ -10,7 +10,7 @@ class PublicIntegrationStatusController extends Controller
 {
     public function __invoke()
     {
-        $latestRun = IntegrationLog::where('stage', 'RUN')->latest('id')->first();
+        $latestRun = IntegrationLog::where('environment', SystemConfig::environment())->where('stage', 'RUN')->latest('id')->first();
         $latestIds = Osinergmin::query()
             ->selectRaw('MAX(id)')
             ->where('environment', SystemConfig::environment())

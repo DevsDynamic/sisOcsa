@@ -7,6 +7,7 @@ use App\Models\Osinergmin;
 use App\Services\SystemConfig;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -38,6 +39,26 @@ class DashboardController extends Controller
         $todayErrorsUrl = route('reports.osinergmin', ['from' => now()->toDateString(), 'to' => now()->toDateString(), 'status' => 'ERROR']);
 
         return view('dashboard', compact('clients', 'activeClients', 'inactiveClients', 'gpsSources', 'today', 'errorsToday', 'lastTransmission', 'daily', 'environment', 'todayReportUrl', 'todayErrorsUrl'));
+    }
+
+    public function status(Request $request)
+    {
+        $user = $request->user();
+        $environment = SystemConfig::environment();
+
+        return response()->json(Cache::remember("dashboard:status:{$environment}:{$user->id}", now()->addSeconds(30), function () use ($user, $environment) {
+            $transmissions = Osinergmin::query()->forEnvironment($environment)->visibleTo($user);
+            $todayRange = [now()->startOfDay(), now()->endOfDay()];
+            $last = (clone $transmissions)->latest('id')->first(['created_at', 'response_status']);
+
+            return [
+                'today' => (clone $transmissions)->whereBetween('created_at', $todayRange)->count(),
+                'errors_today' => (clone $transmissions)->whereBetween('created_at', $todayRange)
+                    ->whereIn('response_status', ['ERROR', 'REJECTED', 'FAILED'])->count(),
+                'last_transmission_at' => $last?->created_at?->toIso8601String(),
+                'last_status' => $last?->response_status,
+            ];
+        }));
     }
 
     /**

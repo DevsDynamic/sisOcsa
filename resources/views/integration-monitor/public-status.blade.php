@@ -2,11 +2,12 @@
 <html lang="es">
 <head>
  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Estado de integración OCSA</title>
+ <link rel="icon" type="image/png" href="{{ asset('vendor/adminlte/dist/img/logo_ocsa_circulo.png') }}?v=2">
  <style>*{box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;background:#f3f7fb;color:#203040;margin:0}.wrap{max-width:1180px;margin:32px auto;padding:0 18px}.head,.card{background:#fff;border-radius:16px;box-shadow:0 8px 28px #16324f12;padding:24px;margin-bottom:20px}.head-top,.summary{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}h1,h2{margin:0 0 8px}.state,.badge{display:inline-block;padding:6px 11px;border-radius:20px;font-size:13px;font-weight:800}.state.ok,.badge.ok{background:#d7f5e3;color:#126b35}.state.error,.badge.error{background:#ffe0e3;color:#a7182b}.badge.unknown{background:#fff0c2;color:#795600}.metric{flex:1;min-width:160px;background:#f6f9fc;border:1px solid #e6edf4;border-radius:12px;padding:14px}.metric strong{display:block;font-size:24px}.metric span,.muted{color:#6b7885;font-size:14px}.table{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px solid #e8eef4;text-align:left;vertical-align:top}th{font-size:13px;color:#526171;background:#f8fafc;position:sticky;top:0}.date{white-space:nowrap}.reason{min-width:260px;max-width:480px}.plate{font-weight:800}.legend{padding:12px 14px;border-left:4px solid #2f80ed;background:#eef6ff;border-radius:8px;margin:14px 0}@media(max-width:700px){.wrap{margin:15px auto}.head,.card{padding:17px}th,td{padding:9px}.optional{display:none}}</style>
 </head>
 <body><main class="wrap">
  <section class="head">
-  <div class="head-top"><div><h1>Estado de retransmisión GPS</h1><p class="muted">Consulta de solo lectura · últimos 30 días · actualizado al recargar</p></div><span class="state {{ $latestRun?->status === 'SUCCESS' ? 'ok' : 'error' }}">{{ $latestRun?->status === 'SUCCESS' ? 'OPERATIVO' : 'CON ERRORES' }}</span></div>
+  <div class="head-top"><div><h1>Estado de retransmisión GPS</h1><p class="muted">Consulta de solo lectura · últimos 30 días · actualización automática cada minuto</p></div><span class="state {{ $latestRun?->status === 'SUCCESS' ? 'ok' : 'error' }}">{{ $latestRun?->status === 'SUCCESS' ? 'OPERATIVO' : 'CON ERRORES' }}</span></div>
   <p><strong>Última ejecución:</strong> {{ $latestRun?->created_at?->format('d/m/Y H:i:s') ?? 'No disponible' }}</p><p class="muted">{{ $latestRun?->message ?? 'Todavía no existe una ejecución registrada.' }}</p>
   <div class="summary"><div class="metric"><strong>{{ $summary['total'] }}</strong><span>Unidades con actividad</span></div><div class="metric"><strong style="color:#168443">{{ $summary['success'] }}</strong><span>Último envío aceptado</span></div><div class="metric"><strong style="color:#c6283e">{{ $summary['error'] }}</strong><span>Último envío rechazado</span></div><div class="metric"><strong style="color:#946200">{{ $summary['unknown'] }}</strong><span>Respuesta no concluyente</span></div></div>
  </section>
@@ -17,4 +18,4 @@
   @empty <tr><td colspan="5">No hay retransmisiones registradas durante los últimos 30 días.</td></tr> @endforelse
   </tbody></table></div>
  </section>
-</main></body></html>
+</main><script>const statusTimer=setInterval(()=>{if(!document.hidden)location.reload()},60000);window.addEventListener('beforeunload',()=>clearInterval(statusTimer));</script></body></html>

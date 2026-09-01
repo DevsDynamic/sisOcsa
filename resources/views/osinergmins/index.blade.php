@@ -254,6 +254,10 @@
             font-size: .75rem;
             font-weight: 700
         }
+        .unit-health-dot { display:inline-flex; align-items:center; gap:5px; margin-top:4px; font-size:.68rem; font-weight:800 }
+        .unit-health-dot::before { content:''; width:7px; height:7px; border-radius:50%; background:currentColor }
+        .unit-health-dot.success { color:#188044 }.unit-health-dot.warning { color:#936900 }
+        .unit-health-dot.danger { color:#c7332d }.unit-health-dot.unknown { color:#748292 }
     </style>
 @stop
 
@@ -347,7 +351,8 @@
                                 escapeHtml(unit.uuid) + '" data-plate="' + escapeHtml(unit
                                     .plate) + '"><i class="fas fa-car-side"></i><div><strong>' +
                                 display(unit.plate) +
-                                '</strong><span class="unit-history-link">Ver historial</span></div></div>'
+                                '</strong><span class="unit-health-dot ' + escapeHtml(unit.operational?.tone || 'unknown') + '">' +
+                                display(unit.operational?.label || 'Sin historial') + '</span><span class="unit-history-link">Ver historial</span></div></div>'
                                 ).join('') + '</div>';
                         }
                     }
@@ -367,6 +372,18 @@
                     }
                 }
             });
+
+            const refreshUnits = window.setInterval(() => {
+                if (!document.hidden && !$('#modal-show-unit').hasClass('show')) {
+                    $('#tablaPrincipal').DataTable().ajax.reload(null, false);
+                }
+            }, 60000);
+            const refreshHistory = window.setInterval(() => {
+                if (!document.hidden && $('#modal-show-unit').hasClass('show') && $.fn.DataTable.isDataTable('#detalles')) {
+                    $('#detalles').DataTable().ajax.reload(null, false);
+                }
+            }, 60000);
+            $(window).on('beforeunload', () => { window.clearInterval(refreshUnits); window.clearInterval(refreshHistory); });
 
             $(document).on('click', '.show-unit', function() {
                 const unitId = $(this).data('id'),

@@ -6,6 +6,13 @@
 </div>@stop
 @section('content')
     <div id="units-notice" class="alert alert-warning d-none"></div>
+    <div class="unit-health-guide" role="note">
+        <div><i class="fas fa-heartbeat"></i><span><strong>Estado operativo en tiempo real</strong><small>Combina la
+                    vigencia del dato GPS, la frecuencia de envío y la respuesta de Osinergmin.</small></span></div>
+        <div class="health-legend"><span class="health-key success">Operativo</span><span
+                class="health-key warning">Revisar</span><span class="health-key danger">Alerta</span><span
+                class="health-key unknown">Sin historial</span></div>
+    </div>
     <div class="card">
         <div class="card-body">
             <table id="tablaPrincipal" class="table table-hover" style="width:100%">
@@ -16,7 +23,9 @@
                         <th>Cliente</th>
                         <th>Modelo</th>
                         <th>Kilometraje</th>
-                        <th>Última actualización</th>
+                        <th>Último dato OCSA</th>
+                        <th>Último envío</th>
+                        <th>Estado operativo</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -45,6 +54,26 @@
             font-weight: 700;
             white-space: nowrap
         }
+
+        .unit-health-guide { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 18px;
+            margin-bottom:16px; border:1px solid #d9e4ec; border-radius:12px; background:#fff }
+        .unit-health-guide>div:first-child { display:flex; align-items:center; gap:12px }
+        .unit-health-guide i { color:#1fa3b8; font-size:1.45rem }
+        .unit-health-guide strong, .unit-health-guide small { display:block }
+        .unit-health-guide small { color:#687789 }
+        .health-legend { display:flex; flex-wrap:wrap; gap:7px }
+        .health-key, .operational-badge { display:inline-flex; align-items:center; gap:7px; border-radius:999px;
+            padding:5px 10px; font-size:.76rem; font-weight:800; white-space:nowrap }
+        .health-key::before, .operational-badge::before { content:''; width:8px; height:8px; border-radius:50%;
+            background:currentColor; box-shadow:0 0 0 3px rgba(0,0,0,.04) }
+        .health-key.success, .operational-badge.success { color:#17743b; background:#e4f4e9 }
+        .health-key.warning, .operational-badge.warning { color:#8a6200; background:#fff1c7 }
+        .health-key.danger, .operational-badge.danger { color:#bd2b25; background:#fde6e4 }
+        .health-key.unknown, .operational-badge.unknown { color:#647384; background:#eaf0f4 }
+        .operational-cell small { display:block; max-width:250px; margin-top:5px; color:#687789; line-height:1.25 }
+        .date-cell strong, .date-cell small { display:block; white-space:nowrap }
+        .date-cell small { color:#718093; margin-top:2px }
+        @media(max-width:767px) { .unit-health-guide { align-items:flex-start; flex-direction:column } }
 </style>@stop
 @section('js')
     <script>
@@ -74,7 +103,18 @@
                 return '<span class="status-pill unknown" title="Osinergmin no informó aceptación ni rechazo. Estado técnico: ' +
                     escapeHtml(value) + '">Sin confirmación</span>';
             };
-            $('#tablaPrincipal').DataTable({
+            const operationalCell = operational => {
+                const state = operational || {};
+                const tone = ['success', 'warning', 'danger', 'unknown'].includes(state.tone) ? state.tone : 'unknown';
+                return '<div class="operational-cell"><span class="operational-badge ' + tone + '">' +
+                    display(state.label || 'Sin historial') + '</span><small>' + display(state.detail) + '</small></div>';
+            };
+            const transmissionCell = operational => {
+                const state = operational || {};
+                return '<div class="date-cell"><strong>' + formatDate(state.last_transmission_at) +
+                    '</strong><small>' + (state.response_status ? 'Resultado: ' + display(state.response_status) : 'Sin resultado') + '</small></div>';
+            };
+            const unitsTable = $('#tablaPrincipal').DataTable({
                 responsive: true,
                 autoWidth: false,
                 processing: true,
@@ -117,6 +157,16 @@
                         data: 'last_update',
                         name: 'last_update',
                         render: data => formatDate(data)
+                    }, {
+                        data: 'operational',
+                        orderable: false,
+                        searchable: false,
+                        render: data => transmissionCell(data)
+                    }, {
+                        data: 'operational',
+                        orderable: false,
+                        searchable: false,
+                        render: data => operationalCell(data)
                     },
                     {
                         data: null,
@@ -129,7 +179,8 @@
                     $(row).addClass('show-unit-row').attr({
                         tabindex: 0,
                         'data-id': data.uuid,
-                        'data-plate': data.plate
+                        'data-plate': data.plate,
+                        'data-operational': JSON.stringify(data.operational || {})
                     });
                 },
                 language: {
@@ -146,8 +197,17 @@
                     }
                 }
             });
+            const refreshUnits = window.setInterval(() => {
+                if (!document.hidden && !$('#modal-show-unit').hasClass('show')) unitsTable.ajax.reload(null, false);
+            }, 60000);
+            const refreshHistory = window.setInterval(() => {
+                if (!document.hidden && $('#modal-show-unit').hasClass('show') && $.fn.DataTable.isDataTable('#detalles')) {
+                    $('#detalles').DataTable().ajax.reload(null, false);
+                }
+            }, 60000);
+            $(window).on('beforeunload', () => { window.clearInterval(refreshUnits); window.clearInterval(refreshHistory); });
             $(document).on('click', '.show-unit-row', function() {
-                openHistory($(this).data('id'), $(this).data('plate'));
+                openHistory($(this).data('id'), $(this).data('plate'), $(this).attr('data-operational'));
             }).on('keydown', '.show-unit-row', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -155,9 +215,12 @@
                 }
             });
 
-            function openHistory(unitId, plate) {
+            function openHistory(unitId, plate, operational) {
                 const modal = $('#modal-show-unit');
                 modal.find('.plate').text(plate || 'Sin placa');
+                let state = {};
+                try { state = JSON.parse(operational || '{}'); } catch (error) { state = {}; }
+                modal.find('.unit-current-health').removeClass('d-none').html(operationalCell(state));
                 $('#unit-history-notice').addClass('d-none').empty();
                 modal.modal('show');
                 if ($.fn.DataTable.isDataTable('#detalles')) {

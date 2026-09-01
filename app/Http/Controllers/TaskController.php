@@ -563,6 +563,7 @@ class TaskController extends Controller
     private function integrationLog(string $environment, string $stage, string $status, string $message, ?int $personId = null, ?int $httpStatus = null, array $context = []): void
     {
         try {
+            $message = \App\Services\SensitiveDataRedactor::text($message) ?? '';
             IntegrationLog::create([
                 'person_id' => $personId,
                 'environment' => $environment,
@@ -581,15 +582,7 @@ class TaskController extends Controller
 
     private function sanitizeContext(array $context): array
     {
-        foreach ($context as $key => $value) {
-            if (preg_match('/token|authorization|api[_-]?key|secret|password/i', (string) $key)) {
-                $context[$key] = '[PROTEGIDO]';
-            } elseif (is_array($value)) {
-                $context[$key] = $this->sanitizeContext($value);
-            }
-        }
-
-        return $context;
+        return \App\Services\SensitiveDataRedactor::context($context);
     }
 
     public function checkAndSendAlerts()

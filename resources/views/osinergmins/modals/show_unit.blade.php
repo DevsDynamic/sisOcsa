@@ -17,6 +17,7 @@
                             class="status-pill error">Rechazado</span><span class="status-pill unknown">Sin
                             confirmación</span></div>
                 </div>
+                <div class="unit-current-health mb-3 d-none"></div>
                 <div id="unit-history-notice" class="alert alert-danger d-none" role="alert"></div>
                 <div class="history-table-shell">
                     <table id="detalles" class="table table-hover mb-0" style="width:100%">

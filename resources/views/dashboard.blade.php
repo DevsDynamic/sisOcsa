@@ -11,10 +11,10 @@
  @foreach([
   ['value'=>$clients,'label'=>'Clientes registrados','detail'=>$activeClients.' activos · '.$inactiveClients.' inactivos','icon'=>'fa-users','color'=>'primary','url'=>route('people.index')],
   ['value'=>$gpsSources,'label'=>'Fuentes GPS activas','icon'=>'fa-satellite-dish','color'=>'info','url'=>route('osinergmins.index')],
-  ['value'=>$today,'label'=>'Envíos de hoy','icon'=>'fa-paper-plane','color'=>'success','url'=>$todayReportUrl],
-  ['value'=>$errorsToday,'label'=>'Errores de hoy','icon'=>'fa-exclamation-triangle','color'=>'danger','url'=>$todayErrorsUrl]
+  ['value'=>$today,'label'=>'Envíos de hoy','icon'=>'fa-paper-plane','color'=>'success','url'=>$todayReportUrl,'id'=>'today-transmissions'],
+  ['value'=>$errorsToday,'label'=>'Errores de hoy','icon'=>'fa-exclamation-triangle','color'=>'danger','url'=>$todayErrorsUrl,'id'=>'today-errors']
  ] as $card)
- <div class="col-xl-3 col-md-6"><a href="{{$card['url']}}" class="metric-card"><div class="metric-icon bg-{{$card['color']}}"><i class="fas {{$card['icon']}}"></i></div><div><strong>{{$card['value']}}</strong><span>{{$card['label']}}</span>@isset($card['detail'])<small>{{$card['detail']}}</small>@endisset</div><i class="fas fa-chevron-right ml-auto text-muted"></i></a></div>
+ <div class="col-xl-3 col-md-6"><a href="{{$card['url']}}" class="metric-card"><div class="metric-icon bg-{{$card['color']}}"><i class="fas {{$card['icon']}}"></i></div><div><strong @isset($card['id']) id="{{$card['id']}}" @endisset>{{$card['value']}}</strong><span>{{$card['label']}}</span>@isset($card['detail'])<small>{{$card['detail']}}</small>@endisset</div><i class="fas fa-chevron-right ml-auto text-muted"></i></a></div>
  @endforeach
 </div>
 <div class="row">
@@ -22,8 +22,9 @@
  <div class="col-lg-4">
   <div class="card modern-card"><div class="card-header border-0"><h3 class="card-title font-weight-bold">Estado operativo</h3></div><div class="card-body">
    <div class="status-row"><span>Ambiente</span><b>{{$environment==='production'?'Producción':'Demo'}}</b></div>
-   <div class="status-row"><span>Último envío</span><b>{{$lastTransmission?->created_at?->format('d/m/Y H:i:s') ?? 'Sin registros'}}</b></div>
-   <div class="status-row"><span>Último estado</span><span class="badge badge-{{$lastTransmission?->response_status==='SUCCESS'?'success':'secondary'}}">{{$lastTransmission?->response_status ?? 'PENDIENTE'}}</span></div>
+   <div class="status-row"><span>Último envío</span><b id="last-transmission">{{$lastTransmission?->created_at?->format('d/m/Y H:i:s') ?? 'Sin registros'}}</b></div>
+   <div class="status-row"><span>Último estado</span><span id="last-status" class="badge badge-{{$lastTransmission?->response_status==='SUCCESS'?'success':'secondary'}}">{{$lastTransmission?->response_status ?? 'PENDIENTE'}}</span></div>
+   <small class="text-muted d-block mt-3"><i class="fas fa-sync-alt mr-1"></i>Actualización automática cada minuto</small>
   </div></div>
   @if(auth()->user()->is_system_owner)<a href="{{route('system-settings.edit')}}" class="btn btn-dark btn-block py-3"><i class="fas fa-cog mr-2"></i>Administrar integración</a>@endif
  </div>
@@ -35,5 +36,9 @@
 </style>@stop
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script>new Chart(document.getElementById('activityChart'),{type:'bar',data:{labels:@json($daily->pluck('day')),datasets:[{label:'Total',data:@json($daily->pluck('total')),backgroundColor:'#1266f1',borderRadius:6},{label:'Exitosos',data:@json($daily->pluck('success')),backgroundColor:'#2ecc71',borderRadius:6}]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});</script>
+<script>
+new Chart(document.getElementById('activityChart'),{type:'bar',data:{labels:@json($daily->pluck('day')),datasets:[{label:'Total',data:@json($daily->pluck('total')),backgroundColor:'#1266f1',borderRadius:6},{label:'Exitosos',data:@json($daily->pluck('success')),backgroundColor:'#2ecc71',borderRadius:6}]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
+const refreshDashboard=()=>{if(document.hidden)return;fetch(@json(route('dashboard.status')),{headers:{Accept:'application/json'}}).then(r=>r.ok?r.json():Promise.reject()).then(data=>{document.getElementById('today-transmissions').textContent=data.today;document.getElementById('today-errors').textContent=data.errors_today;document.getElementById('last-transmission').textContent=data.last_transmission_at?new Intl.DateTimeFormat('es-PE',{dateStyle:'short',timeStyle:'medium',timeZone:'America/Lima'}).format(new Date(data.last_transmission_at)):'Sin registros';const badge=document.getElementById('last-status'),status=data.last_status||'PENDIENTE';badge.textContent=status;badge.className='badge badge-'+(status==='SUCCESS'?'success':(['ERROR','REJECTED','FAILED'].includes(status)?'danger':'warning'));}).catch(()=>{});};
+const dashboardTimer=setInterval(refreshDashboard,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshDashboard()});window.addEventListener('beforeunload',()=>clearInterval(dashboardTimer));
+</script>
 @stop

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use App\Services\SystemConfig;
+use App\Services\UnitOperationalStatus;
 
 class OsinergminController extends Controller
 {
@@ -141,6 +142,8 @@ class OsinergminController extends Controller
                 ];
             }
         }
+
+        $grouped_data = $this->attachOperationalStatus($grouped_data);
 
         // Devolver los datos agrupados por cliente, donde cada cliente tiene una sola empresa y múltiples unidades
         return Datatables::of(collect($grouped_data)->values())
@@ -296,6 +299,7 @@ class OsinergminController extends Controller
 
                 foreach ($body['data']['units'] ?? [] as $unit) {
                     $units[] = [
+                        'person_id' => $source->id,
                         'uuid' => $unit['unit_id'] ?? null,
                         'plate' => $unit['number'] ?? 'Desconocido',
                         'name_unit' => $unit['label'] ?? '',
@@ -309,12 +313,68 @@ class OsinergminController extends Controller
             $errors[] = 'Error al obtener unidades: ' . $exception->getMessage();
         }
 
+
+        $grouped = [];
+        foreach ($units as $unit) {
+            $grouped[$unit['person_id']] ??= [
+                'client_id' => $unit['person_id'],
+                'units' => [],
+            ];
+            $grouped[$unit['person_id']]['units'][] = $unit;
+        }
+        $grouped = $this->attachOperationalStatus($grouped);
+        $units = collect($grouped)->flatMap(fn ($client) => $client['units'])->values()->all();
+
         return DataTables::of(collect($units))
             ->addIndexColumn()
             ->addColumn('action', fn($unit) => '<button class="btn btn-sm btn-info show-unit" data-id="' . e($unit['uuid']) . '" data-plate="' . e($unit['plate']) . '"><i class="fas fa-eye"></i> Ver</button>')
             ->rawColumns(['action'])
             ->with('notice', implode(' | ', $errors))
             ->make(true);
+    }
+
+    private function attachOperationalStatus(array $clients): array
+    {
+        $unitKeys = collect($clients)->flatMap(function ($client) {
+            return collect($client['units'] ?? [])->map(fn ($unit) => [
+                'person_id' => (int) ($client['client_id'] ?? $unit['person_id'] ?? 0),
+                'uuid' => (string) ($unit['uuid'] ?? ''),
+            ]);
+        })->filter(fn ($unit) => $unit['person_id'] > 0 && $unit['uuid'] !== '')->values();
+
+        $latest = collect();
+        if ($unitKeys->isNotEmpty()) {
+            $personIds = $unitKeys->pluck('person_id')->unique()->all();
+            $uuids = $unitKeys->pluck('uuid')->unique()->all();
+            $latestIds = Osinergmin::query()
+                ->selectRaw('MAX(id)')
+                ->forEnvironment()
+                ->visibleTo(Auth::user())
+                ->whereIn('person_id', $personIds)
+                ->whereIn('uuid', $uuids)
+                ->groupBy('person_id', 'uuid');
+
+            $latest = Osinergmin::query()->whereIn('id', $latestIds)->get()
+                ->keyBy(fn ($row) => $row->person_id . '|' . $row->uuid);
+        }
+
+        $statusService = app(UnitOperationalStatus::class);
+        foreach ($clients as &$client) {
+            foreach ($client['units'] as &$unit) {
+                $personId = (int) ($client['client_id'] ?? $unit['person_id'] ?? 0);
+                $row = $latest->get($personId . '|' . ($unit['uuid'] ?? ''));
+                $unit['operational'] = $statusService->evaluate(
+                    $unit['last_update'] ?? null,
+                    $row?->created_at,
+                    $row?->response_status
+                );
+                unset($unit['person_id']);
+            }
+            unset($unit);
+        }
+        unset($client);
+
+        return $clients;
     }
 
     public function create()

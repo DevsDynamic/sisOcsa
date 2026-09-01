@@ -14,17 +14,18 @@ class IntegrationMonitorController extends Controller
 {
     public function index()
     {
-        $latestRun = IntegrationLog::where('stage', 'RUN')->latest('id')->first();
-        $lastSuccess = IntegrationLog::where('stage', 'RUN')->where('status', 'SUCCESS')->latest('id')->first();
-        $recentErrors = IntegrationLog::with('person')->where('status', 'ERROR')->latest('id')->limit(20)->get();
+        $environment = SystemConfig::environment();
+        $latestRun = IntegrationLog::where('environment', $environment)->where('stage', 'RUN')->latest('id')->first();
+        $lastSuccess = IntegrationLog::where('environment', $environment)->where('stage', 'RUN')->where('status', 'SUCCESS')->latest('id')->first();
+        $recentErrors = IntegrationLog::with('person')->where('environment', $environment)->where('status', 'ERROR')
+            ->latest('id')->paginate(10, ['*'], 'errors_page')->withQueryString();
         $recentRejections = Osinergmin::with('person')
-            ->where('environment', SystemConfig::environment())
+            ->where('environment', $environment)
             ->where('response_status', 'ERROR')
             ->latest('id')
-            ->limit(25)
-            ->get();
-        $logs = IntegrationLog::with('person')->latest('id')->paginate(50);
-        $environment = SystemConfig::environment();
+            ->paginate(10, ['*'], 'rejections_page')->withQueryString();
+        $logs = IntegrationLog::with('person')->where('environment', $environment)
+            ->latest('id')->paginate(25, ['*'], 'logs_page')->withQueryString();
         $cronStale = !$latestRun || $latestRun->created_at->lt(now()->subMinutes(5));
         $demoClients = Person::where('is_demo', true)->count();
         $demoRecords = Osinergmin::where('environment', 'development')->count();

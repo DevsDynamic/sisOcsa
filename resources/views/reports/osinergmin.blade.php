@@ -167,7 +167,10 @@
                     { data: 'odometer', name: 'odometer' },
                     { data: 'response_timestamp', name: 'response_timestamp' },
                     { data: 'response_message', name: 'response_message' },
-                    { data: 'response_suggestion', name: 'response_suggestion' },
+                    {
+                        data: 'response_suggestion', name: 'response_suggestion', defaultContent: 'Sin sugerencia',
+                        render: data => $('<div>').text(data && String(data).trim() ? data : 'Sin sugerencia').html()
+                    },
                     {
                         data: 'response_status', name: 'response_status',
                         render: data => {
