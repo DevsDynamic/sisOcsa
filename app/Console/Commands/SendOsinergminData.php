@@ -16,7 +16,15 @@ class SendOsinergminData extends Command
     {
         $this->info('Iniciando envio a Osinergmin...');
 
-        $response = $controller->sendDataOsinergmin();
+        try {
+            $response = $controller->sendDataOsinergmin();
+        } catch (\Throwable $exception) {
+            $this->error('No se pudo ejecutar la retransmision: '.$exception->getMessage());
+
+            return self::FAILURE;
+        } finally {
+            $this->callSilent('osinergmin:prune', ['--days' => 30, '--limit' => 1000]);
+        }
 
         if ($response instanceof Response && $response->getStatusCode() === 409) {
             $this->warn('Se omitio la ejecucion porque otro envio sigue activo.');
@@ -28,16 +36,13 @@ class SendOsinergminData extends Command
             ? ($response->getData()['resu'] ?? [])
             : [];
         $successCount = collect($results)->where('status', 'SUCCESS')->count();
-        $errorResults = collect($results)->where('status', 'ERROR');
+        $errorResults = collect($results)->whereIn('status', [
+            'ERROR', 'WAF_BLOCKED', 'CONNECTION_ERROR', 'UNKNOWN',
+        ]);
 
         foreach ($errorResults as $errorResult) {
             $this->error($errorResult['error_message'] ?? 'Error de envio sin detalle.');
         }
-
-        $this->call('osinergmin:prune', [
-            '--days' => 30,
-            '--limit' => 1000,
-        ]);
 
         if ($errorResults->isNotEmpty()) {
             $this->warn(

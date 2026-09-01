@@ -52,7 +52,6 @@ class PersonController extends Controller
                 'people.marketing_consent AS marketing_consent',
                 'u.profile_photo_path AS profile_photo_path',
                 'tp.name AS type_person',
-                'people.token AS token',
                 'people.status AS status',
                 'people.created_at AS created_date'
             )
@@ -134,7 +133,6 @@ class PersonController extends Controller
                 'people.email AS email',
                 'people.phone_number AS phone_number',
                 'tp.name AS type_person',
-                'people.token AS token',
                 'people.status AS status',
                 'people.created_at AS created_date'
             )
@@ -220,7 +218,6 @@ class PersonController extends Controller
                 'people.email AS email',
                 'people.phone_number AS phone_number',
                 'tp.name AS type_person',
-                'people.token AS token',
                 'people.status AS status',
                 'people.created_at AS created_date'
             )
@@ -422,6 +419,10 @@ class PersonController extends Controller
                 ->where('people.id', $id)
                 ->first();
 
+            if ($person) {
+                $person->token_configured = filled($person->token);
+                unset($person->token);
+            }
             $html = $person;
         }
         return response()->json(['html' => $html]);
@@ -468,6 +469,10 @@ class PersonController extends Controller
                 ->where('people.id', $id)
                 ->first();
 
+            if ($person) {
+                $person->token_configured = filled($person->token);
+                unset($person->token);
+            }
             $html = $person;
         }
         return response()->json(['html' => $html]);
@@ -573,7 +578,9 @@ class PersonController extends Controller
                 'birthdate' => $request->type === 'co' ? $request->birthdate : null,
                 'address' => $request->type === 'co' ? $request->address : null,
                 'phone_number' => $request->phone_number,
-                'token' => $request->type === 'co' ? $request->token : null,
+                'token' => $request->type === 'co'
+                    ? (filled($request->token) ? $request->token : $person->token)
+                    : null,
                 'lead_source' => $request->lead_source,
                 'commercial_notes' => $request->commercial_notes,
                 'marketing_consent' => $request->boolean('marketing_consent'),

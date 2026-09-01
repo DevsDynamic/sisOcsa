@@ -41,7 +41,7 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::resource('dashboard', DashboardController::class)->names('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
     Route::get('mi-perfil', [ProfileController::class, 'edit'])->name('profile.account');
     Route::put('mi-perfil', [ProfileController::class, 'update'])->name('profile.account.update');
     Route::put('mi-perfil/password', [ProfileController::class, 'password'])->name('profile.account.password');
@@ -67,46 +67,54 @@ Route::middleware([
     });
 
     //USERS//USUARIOS
-    Route::resource('users', UserController::class)->names('users');
-    Route::get('users.index-table', [UserController::class, 'indexTable'])->name('users.index-table');
-    Route::get('users.index-admin', [UserController::class, 'indexAdmin'])->name('users.index-admin');
-    Route::get('users.index-admin/data', [UserController::class, 'indexTableAdmin'])->name('users.index-admin-data');
-    Route::get('users.index-customer', [UserController::class, 'indexCustomer'])->name('users.index-customer');
-    Route::get('users.index-customer/data', [UserController::class, 'indexTableCustomer'])->name('users.index-customer-data');
-    Route::post('/users/change-status', [UserController::class, 'changeStatus'])->name('users.change-status');
-    Route::post('/users/access-system', [UserController::class, 'accessSystem'])->name('users.access-system');
+    Route::get('users', [UserController::class, 'index'])->middleware('can:users.index')->name('users.index');
+    Route::get('users/create', [UserController::class, 'create'])->middleware('can:users.create')->name('users.create');
+    Route::post('users', [UserController::class, 'store'])->middleware('can:users.create')->name('users.store');
+    Route::get('users/{user}', [UserController::class, 'show'])->middleware('can:users.show')->name('users.show');
+    Route::get('users/{user}/edit', [UserController::class, 'edit'])->middleware('can:users.edit')->name('users.edit');
+    Route::match(['put', 'patch'], 'users/{user}', [UserController::class, 'update'])->middleware('can:users.edit')->name('users.update');
+    Route::delete('users/{user}', [UserController::class, 'destroy'])->middleware('can:users.destroy')->name('users.destroy');
+    Route::middleware('can:users.index')->group(function () {
+        Route::get('users.index-table', [UserController::class, 'indexTable'])->name('users.index-table');
+        Route::get('users.index-admin', [UserController::class, 'indexAdmin'])->name('users.index-admin');
+        Route::get('users.index-admin/data', [UserController::class, 'indexTableAdmin'])->name('users.index-admin-data');
+        Route::get('users.index-customer', [UserController::class, 'indexCustomer'])->name('users.index-customer');
+        Route::get('users.index-customer/data', [UserController::class, 'indexTableCustomer'])->name('users.index-customer-data');
+    });
+    Route::post('/users/change-status', [UserController::class, 'changeStatus'])->middleware('can:users.change_status')->name('users.change-status');
+    Route::post('/users/access-system', [UserController::class, 'accessSystem'])->middleware('can:users.access')->name('users.access-system');
 
     //ROLES
-    Route::resource('roles', RoleController::class)->names('roles');
-    Route::get('roles.index/data', [RoleController::class, 'indexTable'])->name('roles.index-data');
-    Route::post('roles/change-status', [RoleController::class, 'changeStatus'])->name('roles.change-status');
-    Route::post('roles/assign-role', [RoleController::class, 'assignRole'])->name('roles.assign-role'); //Asignar rol a un usuario
-    Route::post('roles/assign-users-role', [RoleController::class, 'assignUsersRole'])->name('roles.assign-users-role'); //Asignar rol a varios usuarios
+    Route::resource('roles', RoleController::class)->middleware('can:roles.index')->names('roles');
+    Route::get('roles.index/data', [RoleController::class, 'indexTable'])->middleware('can:roles.index')->name('roles.index-data');
+    Route::post('roles/change-status', [RoleController::class, 'changeStatus'])->middleware('can:roles.change_status')->name('roles.change-status');
+    Route::post('roles/assign-role', [RoleController::class, 'assignRole'])->middleware('can:roles.assign_role')->name('roles.assign-role');
+    Route::post('roles/assign-users-role', [RoleController::class, 'assignUsersRole'])->middleware('can:roles.assign_role')->name('roles.assign-users-role');
 
     //TYPE PEOPLE//TIPOS DE PERSONAS
-    Route::resource('type-people', TypePersonController::class)->names('type-people');
-    Route::get('type-people.index-table', [TypePersonController::class, 'indexTable'])->name('type-people.index-table');
-    Route::post('/type-people/change-status', [TypePersonController::class, 'changeStatus'])->name('type-people.change-status');
+    Route::resource('type-people', TypePersonController::class)->middleware('can:type-people.index')->names('type-people');
+    Route::get('type-people.index-table', [TypePersonController::class, 'indexTable'])->middleware('can:type-people.index')->name('type-people.index-table');
+    Route::post('/type-people/change-status', [TypePersonController::class, 'changeStatus'])->middleware('can:type-people.change_status')->name('type-people.change-status');
 
     //PEOPLE//PERSONAS
-    Route::resource('people', PersonController::class)->names('people');
-    Route::get('people.index-table', [PersonController::class, 'indexTable'])->name('people.index-table');
-    Route::get('people.index-co', [PersonController::class, 'indexCO'])->name('people.index-co');
-    Route::get('people.index-co/data', [PersonController::class, 'indexTableCO'])->name('people.index-co-data');
-    Route::get('people.index-cp', [PersonController::class, 'indexCP'])->name('people.index-cp');
-    Route::get('people.index-cp/data', [PersonController::class, 'indexTableCP'])->name('people.index-cp-data');
-    Route::post('/people/change-status', [PersonController::class, 'changeStatus'])->name('people.change-status');
-    Route::post('/people/{person}/convert', [PersonController::class, 'convert'])->name('people.convert');
-    Route::get('/people/{person}/history', [PersonController::class, 'history'])->name('people.history');
+    Route::resource('people', PersonController::class)->middleware('can:people.index')->names('people');
+    Route::get('people.index-table', [PersonController::class, 'indexTable'])->middleware('can:people.index')->name('people.index-table');
+    Route::get('people.index-co', [PersonController::class, 'indexCO'])->middleware('can:people.index')->name('people.index-co');
+    Route::get('people.index-co/data', [PersonController::class, 'indexTableCO'])->middleware('can:people.index')->name('people.index-co-data');
+    Route::get('people.index-cp', [PersonController::class, 'indexCP'])->middleware('can:people.index')->name('people.index-cp');
+    Route::get('people.index-cp/data', [PersonController::class, 'indexTableCP'])->middleware('can:people.index')->name('people.index-cp-data');
+    Route::post('/people/change-status', [PersonController::class, 'changeStatus'])->middleware('can:people.change_status')->name('people.change-status');
+    Route::post('/people/{person}/convert', [PersonController::class, 'convert'])->middleware('can:people.edit')->name('people.convert');
+    Route::get('/people/{person}/history', [PersonController::class, 'history'])->middleware('can:people.show')->name('people.history');
 
     //OSINERGMIN//RETRANSMISION DE OSINERGMIN
-    Route::resource('osinergmins', OsinergminController::class)->names('osinergmins'); //
-    Route::get('osinergmins.index-table', [OsinergminController::class, 'indexTable'])->name('osinergmins.index-table');
+    Route::get('osinergmins', [OsinergminController::class, 'index'])->middleware('can:osinergmins.manage')->name('osinergmins.index');
+    Route::get('osinergmins.index-table', [OsinergminController::class, 'indexTable'])->middleware('can:osinergmins.manage')->name('osinergmins.index-table');
     Route::get('osinergmins.index-units', [OsinergminController::class, 'indexUnits'])->name('osinergmins.index-units');
     Route::get('osinergmins.index-units/data', [OsinergminController::class, 'indexTableUnitsV2'])->name('osinergmins.index-units-data');
     Route::get('/osinergmin-retransmission/{id}', [OsinergminController::class, 'retransmissionUnits'])->name('osinergmin-retransmission');
 
-    Route::resource('reports', ReportController::class)->names('reports');
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports.retransmissions', [ReportController::class, 'getRetransmissionsReport'])->name('report.retransmissions');
     Route::get('reports.osinergmin', [ReportController::class, 'reportOsinergmin'])->name('reports.osinergmin');
     Route::get('reports.view-osinergmin', [ReportController::class, 'viewReportOsinergmin'])->name('reports.view-osinergmin');

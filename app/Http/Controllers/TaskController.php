@@ -506,8 +506,10 @@ class TaskController extends Controller
             "Ejecución finalizada: {$successes} aceptados, {$errors} rechazados por la API, {$blocked} bloqueados por el firewall, {$connectionErrors} errores de conexión y {$unknowns} sin estado concluyente; {$clients_ocsa->count()} clientes evaluados."
         );
 
-        return view('welcome', compact('resu', 'Date'));
-        //return $resu;
+        return response()->json([
+            'resu' => $resu,
+            'timestamp' => $Date,
+        ]);
     }
 
     private function providerStatus(array $item, array $response, int $httpStatus): string

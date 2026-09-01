@@ -13,7 +13,7 @@ class OsinergminReportTest extends TestCase
 
     public function test_report_paginates_a_large_result_set_on_the_server(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['is_system_owner' => true]);
         $now = now();
 
         foreach (range(1, 20) as $chunk) {

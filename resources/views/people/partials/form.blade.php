@@ -81,7 +81,9 @@
                     name="address" class="form-control"></div>
             <div class="form-group col-12"><label for="token">Token GPS OCSA <small class="text-muted">(solo si
                         usa la integración)</small></label><input id="token" name="token" class="form-control"
-                    autocomplete="off"></div>
+                    type="password" autocomplete="new-password" placeholder="Vacío conserva el token configurado">
+                <small class="text-muted token-status"></small>
+            </div>
         </div>
     </div>
 </div>

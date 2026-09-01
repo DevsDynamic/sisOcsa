@@ -15,17 +15,24 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $clientQuery = Person::operationalClients();
+        $user = request()->user();
+        $maySeeAll = $user->is_system_owner || $user->can('osinergmins.manage');
+        $personId = $user->person?->id;
+        $environment = SystemConfig::environment();
+        $clientQuery = Person::operationalClients()
+            ->when(! $maySeeAll, fn ($query) => $personId
+                ? $query->whereKey($personId)
+                : $query->whereRaw('1 = 0'));
         $clients = (clone $clientQuery)->count();
         $activeClients = (clone $clientQuery)->where('status', true)->count();
         $inactiveClients = $clients - $activeClients;
         $gpsSources = Person::activeGpsSources()->count();
-        $today = Osinergmin::whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])->count();
-        $errorsToday = Osinergmin::whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])->where('response_status', 'ERROR')->count();
-        $lastTransmission = Osinergmin::latest('id')->first();
-        $daily = Osinergmin::query()->selectRaw('DATE(created_at) day, COUNT(*) total, SUM(response_status = ?) success', ['SUCCESS'])
+        $transmissions = Osinergmin::query()->forEnvironment($environment)->visibleTo($user);
+        $today = (clone $transmissions)->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])->count();
+        $errorsToday = (clone $transmissions)->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])->where('response_status', 'ERROR')->count();
+        $lastTransmission = (clone $transmissions)->latest('id')->first();
+        $daily = (clone $transmissions)->selectRaw('DATE(created_at) day, COUNT(*) total, SUM(response_status = ?) success', ['SUCCESS'])
             ->where('created_at', '>=', now()->subDays(6)->startOfDay())->groupBy(DB::raw('DATE(created_at)'))->orderBy('day')->get();
-        $environment = SystemConfig::environment();
 
         $todayReportUrl = route('reports.osinergmin', ['from' => now()->toDateString(), 'to' => now()->toDateString()]);
         $todayErrorsUrl = route('reports.osinergmin', ['from' => now()->toDateString(), 'to' => now()->toDateString(), 'status' => 'ERROR']);

@@ -208,7 +208,8 @@
                             modal.find('#birthdate').val(data.html.birthdate);
                             modal.find('#address').val(data.html.address);
                             modal.find('#phone_number').val(data.html.phone_number);
-                            modal.find('#token').val(data.html.token);
+                            modal.find('#token').val('');
+                            modal.find('.token-status').text(data.html.token_configured ? 'Token configurado: sí.' : 'Token configurado: no.');
                         } else {
                             contactFields
                         .hide(); // Asegurar que se oculte cuando no es contacto
@@ -278,7 +279,8 @@
                             modal.find('#birthdate').val(data.html.birthdate);
                             modal.find('#address').val(data.html.address);
                             modal.find('#phone_number').val(data.html.phone_number);
-                            modal.find('#token').val(data.html.token);
+                            modal.find('#token').val('');
+                            modal.find('.token-status').text(data.html.token_configured ? 'Token configurado: sí.' : 'Token configurado: no.');
                         } else {
                             contactFields
                         .hide(); // Asegurar que se oculte cuando no es contacto

@@ -41,4 +41,18 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
     }
+
+    public function test_inactive_or_suspended_accounts_cannot_authenticate(): void
+    {
+        foreach ([['status' => 0, 'access' => 1], ['status' => 1, 'access' => 0]] as $state) {
+            $user = User::factory()->create($state);
+
+            $this->post('/login', [
+                'username' => $user->username,
+                'password' => 'password',
+            ]);
+
+            $this->assertGuest();
+        }
+    }
 }

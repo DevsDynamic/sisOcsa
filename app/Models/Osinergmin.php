@@ -15,4 +15,22 @@ class Osinergmin extends Model
     {
         return $this->belongsTo(Person::class);
     }
+
+    public function scopeForEnvironment($query, ?string $environment = null)
+    {
+        return $query->where('environment', $environment ?? \App\Services\SystemConfig::environment());
+    }
+
+    public function scopeVisibleTo($query, ?User $user)
+    {
+        if ($user?->is_system_owner || $user?->can('osinergmins.manage')) {
+            return $query;
+        }
+
+        $personId = $user?->person?->id;
+
+        return $personId
+            ? $query->where('person_id', $personId)
+            : $query->whereRaw('1 = 0');
+    }
 }

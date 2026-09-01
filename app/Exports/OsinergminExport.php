@@ -44,13 +44,19 @@ class OsinergminExport implements FromQuery, WithHeadings
     protected $from;
     protected $to;
     protected $status;
+    protected $environment;
+    protected $personId;
+    protected $maySeeAll;
 
-    public function __construct($unit = null, $from = null, $to = null, $status = null)
+    public function __construct($unit = null, $from = null, $to = null, $status = null, $environment = null, $personId = null, $maySeeAll = false)
     {
         $this->unit = $unit;
         $this->from = $from;
         $this->to   = $to;
         $this->status = $status;
+        $this->environment = $environment;
+        $this->personId = $personId;
+        $this->maySeeAll = $maySeeAll;
     }
 
     public function query()
@@ -60,6 +66,13 @@ class OsinergminExport implements FromQuery, WithHeadings
             'gpsDate', 'odometer', 'response_timestamp', 'response_message',
             'response_suggestion', 'response_status', 'created_at', 'updated_at',
         ]);
+
+        $query->where('environment', $this->environment);
+        if (! $this->maySeeAll) {
+            $this->personId
+                ? $query->where('person_id', $this->personId)
+                : $query->whereRaw('1 = 0');
+        }
 
         if ($this->unit) {
             $query->where('uuid', $this->unit);

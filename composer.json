@@ -5,10 +5,10 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "php": "^7.4 || ^8.0",
-        "barryvdh/laravel-dompdf": "^2.1",
+        "php": "^8.2",
+        "barryvdh/laravel-dompdf": "^3.1",
         "jeroennoten/laravel-adminlte": "^3.11",
-        "laravel/framework": "^11.0",
+        "laravel/framework": "^12.0",
         "laravel/jetstream": "^5.1",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
@@ -16,12 +16,12 @@
         "laraveles/spanish": "^1.5",
         "livewire/livewire": "^3.0",
         "maatwebsite/excel": "^3.1",
-        "phpoffice/phpspreadsheet": "^1.30",
+        "phpoffice/phpspreadsheet": "^1.30.6",
         "spatie/laravel-html": "^3.9",
         "spatie/laravel-permission": "^6.9",
         "thiagoalessio/tesseract_ocr": "^2.13",
         "twilio/sdk": "^8.4",
-        "yajra/laravel-datatables-oracle": "11"
+        "yajra/laravel-datatables-oracle": "^12.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

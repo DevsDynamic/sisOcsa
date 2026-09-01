@@ -24,6 +24,7 @@ class RoleSeeder extends Seeder
         Permission::create(['name' => 'system.settings.view', 'description' => 'VER CONFIGURACIÓN DEL SISTEMA', 'module' => 'moduleSystem', 'sub_module' => 'Configuration'])->assignRole($administrator);
         Permission::create(['name' => 'system.notifications.manage', 'description' => 'CONFIGURAR CORREO Y TELEGRAM', 'module' => 'moduleSystem', 'sub_module' => 'Configuration'])->assignRole($administrator);
         Permission::create(['name' => 'system.integrations.manage', 'description' => 'CONFIGURAR AMBIENTE Y RETRANSMISIONES', 'module' => 'moduleSystem', 'sub_module' => 'Configuration']);
+        Permission::create(['name' => 'osinergmins.manage', 'description' => 'VER RETRANSMISIONES DE TODOS LOS CLIENTES', 'module' => 'moduleRetransmission', 'sub_module' => 'Osinergmin'])->assignRole($administrator);
 
         // MODULO DASHBOARD
         Permission::create(['name' => 'dashboard.module', 'description' => 'MODULO DASHBOARD', 'module' => 'moduleDashboard', 'sub_module' => null])->assignRole($administrator);

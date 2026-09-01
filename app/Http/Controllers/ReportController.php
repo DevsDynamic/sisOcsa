@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
+use App\Services\SystemConfig;
 
 class ReportController extends Controller
 {
@@ -22,6 +23,8 @@ class ReportController extends Controller
         [$from, $to] = $this->validatedRange($request);
 
         $retransmissions = Osinergmin::query()
+            ->forEnvironment()
+            ->visibleTo($request->user())
             ->whereBetween('created_at', [$from, $to])
             ->latest('id')
             ->limit(500)
@@ -32,10 +35,12 @@ class ReportController extends Controller
         return response()->json(['html' => $html]);
     }
 
-    public function reportOsinergmin()
+    public function reportOsinergmin(Request $request)
     {
         // El reporte se alimenta de la base local y no se bloquea si OCSA cae.
         $unitOptions = Osinergmin::query()
+            ->forEnvironment()
+            ->visibleTo($request->user())
             ->select('uuid', 'plate')
             ->whereNotNull('uuid')
             ->where('uuid', '<>', '')
@@ -55,6 +60,8 @@ class ReportController extends Controller
         [$from, $to] = $this->validatedRange($request);
 
         $query = Osinergmin::query()
+            ->forEnvironment()
+            ->visibleTo($request->user())
             ->select([
                 'id', 'uuid', 'plate', 'event', 'speed', 'latitude', 'longitude',
                 'gpsDate', 'odometer', 'response_timestamp', 'response_message',
@@ -78,7 +85,18 @@ class ReportController extends Controller
         $unit = $request->filled('unit') ? $request->string('unit')->toString() : null;
         $status = $request->filled('status') ? $request->string('status')->toString() : null;
 
-        return Excel::download(new OsinergminExport($unit, $from, $to, $status), 'osinergmin.xlsx');
+        $user = $request->user();
+        $maySeeAll = $user->is_system_owner || $user->can('osinergmins.manage');
+
+        return Excel::download(new OsinergminExport(
+            $unit,
+            $from,
+            $to,
+            $status,
+            SystemConfig::environment(),
+            $maySeeAll ? null : $user->person?->id,
+            $maySeeAll
+        ), 'osinergmin.xlsx');
     }
 
     private function validatedRange(Request $request): array
