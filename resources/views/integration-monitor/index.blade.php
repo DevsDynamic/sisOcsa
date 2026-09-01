@@ -20,6 +20,14 @@
 <div class="card card-outline card-warning"><div class="card-header"><h3 class="card-title">Preparar producción</h3></div><div class="card-body"><p>Elimina exclusivamente clientes marcados como demo, retransmisiones development y su bitácora. Los datos productivos no se tocan.</p><form method="POST" action="{{route('integration-monitor.purge-demo')}}" onsubmit="return confirm('¿Confirmas la eliminación de todos los datos demo?')">@csrf @method('DELETE')<div class="input-group" style="max-width:480px"><input name="confirmation" class="form-control" placeholder="Escribe ELIMINAR DEMO"><div class="input-group-append"><button class="btn btn-danger"><i class="fas fa-trash mr-1"></i>Limpiar datos demo</button></div></div>@error('confirmation')<small class="text-danger">{{$message}}</small>@enderror</form></div></div>
 @stop
 @section('js')<script>
-const monitorTimer=setInterval(()=>{if(!document.hidden&&!document.querySelector('details[open]')&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))location.reload()},60000);
+const monitorSections=['Errores por ejecución','Motivos de rechazo por unidad','Bitácora de los últimos 30 días'];
+const findMonitorCard=(root,title)=>Array.from(root.querySelectorAll('.card-title')).find(node=>node.textContent.trim()===title)?.closest('.card');
+const loadMonitorSections=(url,onlyTitle=null,updateUrl=false)=>fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest',Accept:'text/html'}})
+ .then(response=>response.ok?response.text():Promise.reject())
+ .then(html=>{const documentNew=new DOMParser().parseFromString(html,'text/html');(onlyTitle?[onlyTitle]:monitorSections).forEach(title=>{const current=findMonitorCard(document,title),fresh=findMonitorCard(documentNew,title);if(current&&fresh)current.replaceWith(fresh)});if(updateUrl)history.pushState({},'',url)})
+ .catch(()=>{});
+document.addEventListener('click',event=>{const link=event.target.closest('.card-footer .pagination a');if(!link)return;const card=link.closest('.card'),title=card?.querySelector('.card-title')?.textContent.trim();if(!monitorSections.includes(title))return;event.preventDefault();card.style.opacity='.55';loadMonitorSections(link.href,title,true).finally(()=>{if(document.contains(card))card.style.opacity=''})});
+window.addEventListener('popstate',()=>loadMonitorSections(location.href));
+const monitorTimer=setInterval(()=>{if(!document.hidden&&!document.querySelector('details[open]')&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))loadMonitorSections(location.href)},60000);
 window.addEventListener('beforeunload',()=>clearInterval(monitorTimer));
 </script>@stop

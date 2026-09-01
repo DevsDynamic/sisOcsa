@@ -9,6 +9,9 @@
 @stop
 
 @section('content')
+    <div class="integration-state-note"><i class="fas fa-info-circle"></i><span><strong>Estado de las unidades</strong>
+            <small><b>Operativo</b> confirma GPS reciente y envÃ­o aceptado. <b>GPS desactualizado</b> significa que
+                Osinergmin acepta la trama, pero la posiciÃ³n recibida desde OCSA es antigua.</small></span></div>
     <div class="card client-units-card">
         <div class="card-body">
             <table id="tablaPrincipal" class="table table-hover" style="width:100%">
@@ -32,6 +35,11 @@
         .client-units-card>.card-body {
             padding: 1.25rem
         }
+        .integration-state-note { display:flex; align-items:center; gap:12px; padding:13px 16px; margin-bottom:16px;
+            border:1px solid #d9e4ec; border-radius:12px; background:#fff }
+        .integration-state-note i { color:#1fa3b8; font-size:1.35rem }
+        .integration-state-note strong, .integration-state-note small { display:block }
+        .integration-state-note small { color:#687789 }
 
         .company-detail strong {
             display: block;

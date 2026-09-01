@@ -35,7 +35,7 @@ class UnitOperationalStatus
         if ($transmissionAge > self::ALERT_MINUTES) {
             return array_merge($result, [
                 'tone' => 'danger',
-                'label' => 'Sin transmisión reciente',
+                'label' => 'Sin transmisión',
                 'detail' => "El último intento fue hace {$transmissionAge} min.",
             ]);
         }
@@ -43,7 +43,7 @@ class UnitOperationalStatus
         if (in_array($status, ['ERROR', 'REJECTED', 'FAILED'], true)) {
             return array_merge($result, [
                 'tone' => 'danger',
-                'label' => 'Último envío rechazado',
+                'label' => 'Envío rechazado',
                 'detail' => 'La transmisión está activa, pero el último resultado fue rechazado.',
             ]);
         }
@@ -67,7 +67,7 @@ class UnitOperationalStatus
         if ($sourceAge > self::GPS_FRESH_MINUTES) {
             return array_merge($result, [
                 'tone' => 'warning',
-                'label' => 'Dato GPS desactualizado',
+                'label' => 'GPS desactualizado',
                 'detail' => "Se transmite y Osinergmin acepta, pero el dato de OCSA tiene {$sourceAge} min de antigüedad.",
             ]);
         }
@@ -75,14 +75,14 @@ class UnitOperationalStatus
         if ($transmissionAge > self::HEALTHY_MINUTES) {
             return array_merge($result, [
                 'tone' => 'warning',
-                'label' => 'Transmisión demorada',
+                'label' => 'Envío demorado',
                 'detail' => "El último envío aceptado fue hace {$transmissionAge} min.",
             ]);
         }
 
         return array_merge($result, [
             'tone' => 'success',
-            'label' => 'Transmitiendo correctamente',
+            'label' => 'Operativo',
             'detail' => 'OCSA entrega datos recientes y Osinergmin esta aceptando los envios.',
         ]);
     }

@@ -7,10 +7,11 @@
 @section('content')
     <div id="units-notice" class="alert alert-warning d-none"></div>
     <div class="unit-health-guide" role="note">
-        <div><i class="fas fa-heartbeat"></i><span><strong>Estado operativo en tiempo real</strong><small>Combina la
-                    vigencia del dato GPS, la frecuencia de envío y la respuesta de Osinergmin.</small></span></div>
+        <div><i class="fas fa-info-circle"></i><span><strong>Cómo interpretar el estado</strong><small><b>Operativo:</b>
+                    GPS reciente y envío aceptado. <b>GPS desactualizado:</b> Osinergmin acepta, pero OCSA entrega una
+                    posición antigua. <b>Alerta:</b> no hay transmisión reciente o el envío fue rechazado.</small></span></div>
         <div class="health-legend"><span class="health-key success">Operativo</span><span
-                class="health-key warning">Revisar</span><span class="health-key danger">Alerta</span><span
+                class="health-key warning">GPS desactualizado</span><span class="health-key danger">Alerta</span><span
                 class="health-key unknown">Sin historial</span></div>
     </div>
     <div class="card">
@@ -70,7 +71,6 @@
         .health-key.warning, .operational-badge.warning { color:#8a6200; background:#fff1c7 }
         .health-key.danger, .operational-badge.danger { color:#bd2b25; background:#fde6e4 }
         .health-key.unknown, .operational-badge.unknown { color:#647384; background:#eaf0f4 }
-        .operational-cell small { display:block; max-width:250px; margin-top:5px; color:#687789; line-height:1.25 }
         .date-cell strong, .date-cell small { display:block; white-space:nowrap }
         .date-cell small { color:#718093; margin-top:2px }
         @media(max-width:767px) { .unit-health-guide { align-items:flex-start; flex-direction:column } }
@@ -106,8 +106,8 @@
             const operationalCell = operational => {
                 const state = operational || {};
                 const tone = ['success', 'warning', 'danger', 'unknown'].includes(state.tone) ? state.tone : 'unknown';
-                return '<div class="operational-cell"><span class="operational-badge ' + tone + '">' +
-                    display(state.label || 'Sin historial') + '</span><small>' + display(state.detail) + '</small></div>';
+                return '<div class="operational-cell" title="' + escapeHtml(state.detail || '') + '"><span class="operational-badge ' + tone + '">' +
+                    display(state.label || 'Sin historial') + '</span></div>';
             };
             const transmissionCell = operational => {
                 const state = operational || {};

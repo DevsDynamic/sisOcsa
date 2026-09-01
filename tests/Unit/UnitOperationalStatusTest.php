@@ -19,7 +19,7 @@ class UnitOperationalStatusTest extends TestCase
         );
 
         $this->assertSame('success', $status['tone']);
-        $this->assertSame('Transmitiendo correctamente', $status['label']);
+        $this->assertSame('Operativo', $status['label']);
         Carbon::setTestNow();
     }
 
@@ -34,7 +34,7 @@ class UnitOperationalStatusTest extends TestCase
         );
 
         $this->assertSame('warning', $status['tone']);
-        $this->assertSame('Dato GPS desactualizado', $status['label']);
+        $this->assertSame('GPS desactualizado', $status['label']);
         Carbon::setTestNow();
     }
 
@@ -49,7 +49,7 @@ class UnitOperationalStatusTest extends TestCase
         );
 
         $this->assertSame('danger', $status['tone']);
-        $this->assertSame('Sin transmisión reciente', $status['label']);
+        $this->assertSame('Sin transmisión', $status['label']);
         Carbon::setTestNow();
     }
 }
