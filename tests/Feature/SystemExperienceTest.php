@@ -45,7 +45,7 @@ class SystemExperienceTest extends TestCase
         $customer = User::factory()->create(['is_system_owner' => false]);
         $owner = User::factory()->create(['is_system_owner' => true]);
 
-        $this->actingAs($customer)->get(route('system-settings.edit'))->assertForbidden();
+        $this->actingAs($customer)->get(route('system-settings.edit'))->assertForbidden()->assertSee('Ir al dashboard');
         $this->actingAs($owner)->get(route('system-settings.edit'))->assertOk();
 
         $this->actingAs($owner)->put(route('system-settings.update'), [

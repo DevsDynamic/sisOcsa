@@ -277,7 +277,7 @@ class OsinergminController extends Controller
 
         try {
             $user = Auth::user();
-            $sources = $user->is_system_owner
+            $sources = ($user->is_system_owner || $user->can('osinergmins.manage'))
                 ? Person::activeGpsSources()->get()
                 : Person::query()->where('user_id', $user->id)->activeGpsSources()->get();
 
@@ -411,7 +411,7 @@ class OsinergminController extends Controller
             ->whereBetween('created_at', [$fechaInicio, $fechaFin])
             ->orderBy('id', 'DESC');
 
-        if (! Auth::user()->is_system_owner) {
+        if (! Auth::user()->is_system_owner && ! Auth::user()->can('osinergmins.manage')) {
             $personId = Auth::user()->person?->id;
             abort_unless($personId, 403, 'El usuario no está asociado a un cliente.');
             $query->where('person_id', $personId);

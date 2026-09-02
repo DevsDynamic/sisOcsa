@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
+use Spatie\Permission\Models\Permission;
 
 class IntegrationMonitorTest extends TestCase
 {
@@ -37,5 +38,18 @@ class IntegrationMonitorTest extends TestCase
     {
         $this->get('/estado-integracion')->assertForbidden();
         $this->get(URL::temporarySignedRoute('integration-status.public', now()->addMinute()))->assertOk();
+    }
+
+    public function test_monitor_access_and_sensitive_actions_are_independent_permissions(): void
+    {
+        $administrator = User::factory()->create();
+        $administrator->givePermissionTo(Permission::firstOrCreate([
+            'name' => 'integration.monitor.view', 'guard_name' => 'web',
+        ]));
+
+        $this->actingAs($administrator)->get(route('integration-monitor.index'))
+            ->assertOk()->assertDontSee('Ejecutar ahora')->assertDontSee('Limpiar datos demo');
+        $this->actingAs($administrator)->post(route('integration-monitor.send-now'), ['environment' => 'production'])
+            ->assertForbidden();
     }
 }

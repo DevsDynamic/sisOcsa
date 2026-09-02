@@ -324,7 +324,7 @@ return [
             'text' => 'Monitor de integración',
             'icon' => 'fas fa-heartbeat',
             'route' => 'integration-monitor.index',
-            'can' => 'system.manage',
+            'can' => 'integration.monitor.view',
         ],
         ['header' => 'MODULOS'],
         [

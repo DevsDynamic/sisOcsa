@@ -61,11 +61,12 @@ Route::middleware([
         Route::post('administracion/configuracion/probar-telegram', [SystemSettingController::class, 'testTelegram'])
             ->middleware('can:system.notifications.manage')->name('system-settings.test-telegram');
     });
-    Route::middleware('system-owner')->group(function () {
-        Route::get('administracion/monitor', [IntegrationMonitorController::class, 'index'])->name('integration-monitor.index');
-        Route::post('administracion/monitor/enviar', [IntegrationMonitorController::class, 'sendNow'])->name('integration-monitor.send-now');
-        Route::delete('administracion/datos-demo', [IntegrationMonitorController::class, 'purgeDemo'])->name('integration-monitor.purge-demo');
-    });
+    Route::get('administracion/monitor', [IntegrationMonitorController::class, 'index'])
+        ->middleware('can:integration.monitor.view')->name('integration-monitor.index');
+    Route::post('administracion/monitor/enviar', [IntegrationMonitorController::class, 'sendNow'])
+        ->middleware('can:integration.monitor.execute')->name('integration-monitor.send-now');
+    Route::delete('administracion/datos-demo', [IntegrationMonitorController::class, 'purgeDemo'])
+        ->middleware('can:integration.monitor.purge_demo')->name('integration-monitor.purge-demo');
 
     //USERS//USUARIOS
     Route::get('users', [UserController::class, 'index'])->middleware('can:users.index')->name('users.index');

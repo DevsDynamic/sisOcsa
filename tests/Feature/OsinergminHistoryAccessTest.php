@@ -8,6 +8,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Spatie\Permission\Models\Permission;
 
 class OsinergminHistoryAccessTest extends TestCase
 {
@@ -47,6 +48,22 @@ class OsinergminHistoryAccessTest extends TestCase
         ]));
 
         $response->assertOk()->assertJsonPath('recordsTotal', 2);
+    }
+
+    public function test_manager_permission_sees_all_clients_history(): void
+    {
+        $manager = User::factory()->create();
+        $permission = Permission::firstOrCreate(['name' => 'osinergmins.manage', 'guard_name' => 'web']);
+        $manager->givePermissionTo($permission);
+        $first = Person::create(['full_name' => 'Primero', 'status' => true]);
+        $second = Person::create(['full_name' => 'Segundo', 'status' => true]);
+        SystemSetting::create(['key' => 'osinergmin_environment', 'value' => 'production']);
+        $this->record($first->id, 'production');
+        $this->record($second->id, 'production');
+
+        $this->actingAs($manager)->getJson(route('osinergmin-retransmission', [
+            'id' => 'unit-1', 'draw' => 1, 'start' => 0, 'length' => 25,
+        ]))->assertOk()->assertJsonPath('recordsTotal', 2);
     }
 
     private function record(int $personId, string $environment): void
