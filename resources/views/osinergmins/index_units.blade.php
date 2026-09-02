@@ -183,7 +183,7 @@
                         data: null,
                         orderable: false,
                         searchable: false,
-                        render: () => '<i class="fas fa-history mr-1"></i>Ver historial'
+                        render: () => '</br><i class="fas fa-history mr-1"></i>Ver historial'
                     }
                 ],
                 createdRow: function(row, data) {
