@@ -87,7 +87,13 @@ Route::middleware([
     Route::post('/users/access-system', [UserController::class, 'accessSystem'])->middleware('can:users.access')->name('users.access-system');
 
     //ROLES
-    Route::resource('roles', RoleController::class)->middleware('can:roles.index')->names('roles');
+    Route::get('roles', [RoleController::class, 'index'])->middleware('can:roles.index')->name('roles.index');
+    Route::get('roles/create', [RoleController::class, 'create'])->middleware('can:roles.create')->name('roles.create');
+    Route::post('roles', [RoleController::class, 'store'])->middleware('can:roles.create')->name('roles.store');
+    Route::get('roles/{role}', [RoleController::class, 'show'])->middleware('can:roles.show')->name('roles.show');
+    Route::get('roles/{role}/edit', [RoleController::class, 'edit'])->middleware('can:roles.edit')->name('roles.edit');
+    Route::match(['put', 'patch'], 'roles/{role}', [RoleController::class, 'update'])->middleware('can:roles.edit')->name('roles.update');
+    Route::delete('roles/{role}', [RoleController::class, 'destroy'])->middleware('can:roles.destroy')->name('roles.destroy');
     Route::get('roles.index/data', [RoleController::class, 'indexTable'])->middleware('can:roles.index')->name('roles.index-data');
     Route::post('roles/change-status', [RoleController::class, 'changeStatus'])->middleware('can:roles.change_status')->name('roles.change-status');
     Route::post('roles/assign-role', [RoleController::class, 'assignRole'])->middleware('can:roles.assign_role')->name('roles.assign-role');

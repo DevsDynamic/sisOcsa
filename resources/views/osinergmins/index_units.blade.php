@@ -8,10 +8,10 @@
     <div id="units-notice" class="alert alert-warning d-none"></div>
     <div class="unit-health-guide" role="note">
         <div><i class="fas fa-info-circle"></i><span><strong>Cómo interpretar el estado</strong><small><b>Operativo:</b>
-                    GPS reciente y envío aceptado. <b>GPS desactualizado:</b> Osinergmin acepta, pero OCSA entrega una
+                    GPS reciente y envío aceptado. <b>Posición antigua:</b> Osinergmin acepta, pero OCSA entrega una
                     posición antigua. <b>Alerta:</b> no hay transmisión reciente o el envío fue rechazado.</small></span></div>
         <div class="health-legend"><span class="health-key success">Operativo</span><span
-                class="health-key warning">GPS desactualizado</span><span class="health-key danger">Alerta</span><span
+                class="health-key warning">Posición antigua</span><span class="health-key danger">Alerta</span><span
                 class="health-key unknown">Sin historial</span></div>
     </div>
     <div class="card">
@@ -24,7 +24,7 @@
                         <th>Cliente</th>
                         <th>Modelo</th>
                         <th>Kilometraje</th>
-                        <th>Último dato OCSA</th>
+                        <th>Última posición OCSA</th>
                         <th>Último envío</th>
                         <th>Estado operativo</th>
                         <th></th>
@@ -111,8 +111,19 @@
             };
             const transmissionCell = operational => {
                 const state = operational || {};
+                const result = ['SUCCESS', 'CREATED', 'ACCEPTED', 'OK'].includes(String(state.response_status || '').toUpperCase()) ? 'Aceptado' :
+                    (['ERROR', 'REJECTED', 'FAILED'].includes(String(state.response_status || '').toUpperCase()) ? 'Rechazado' : 'Sin confirmación');
                 return '<div class="date-cell"><strong>' + formatDate(state.last_transmission_at) +
-                    '</strong><small>' + (state.response_status ? 'Resultado: ' + display(state.response_status) : 'Sin resultado') + '</small></div>';
+                    '</strong><small>Resultado: ' + result + '</small></div>';
+            };
+            const unitIcon = row => {
+                const type = String((row.icon || '') + ' ' + (row.name_unit || '')).toLowerCase();
+                if (type.includes('cisterna') || type.includes('tank')) return 'fa-truck-moving';
+                if (type.includes('camion') || type.includes('truck')) return 'fa-truck';
+                if (type.includes('bus')) return 'fa-bus';
+                if (type.includes('moto')) return 'fa-motorcycle';
+                if (type.includes('van')) return 'fa-shuttle-van';
+                return 'fa-car-side';
             };
             const unitsTable = $('#tablaPrincipal').DataTable({
                 responsive: true,
@@ -137,8 +148,8 @@
                     {
                         data: 'plate',
                         name: 'plate',
-                        render: data =>
-                            '<span class="unit-plate"><i class="fas fa-car-side text-info mr-2"></i>' +
+                        render: (data, type, row) =>
+                            '<span class="unit-plate"><i class="fas ' + unitIcon(row) + ' text-info mr-2"></i>' +
                             display(data) + '</span>'
                     },
                     {
@@ -252,7 +263,10 @@
                     }, {
                         data: 'event',
                         name: 'event',
-                        render: data => '<strong>' + display(data) + '</strong>'
+                        render: data => {
+                            const labels = {acc_on:'Encendido',acc_off:'Apagado',battery_dc:'Batería desconectada',none:'Sin evento'};
+                            return '<strong title="Código técnico: ' + escapeHtml(data || '') + '">' + display(labels[data] || data) + '</strong>';
+                        }
                     }, {
                         data: null,
                         orderable: false,

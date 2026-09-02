@@ -67,7 +67,7 @@ class UnitOperationalStatus
         if ($sourceAge > self::GPS_FRESH_MINUTES) {
             return array_merge($result, [
                 'tone' => 'warning',
-                'label' => 'GPS desactualizado',
+                'label' => 'Posición antigua',
                 'detail' => "Se transmite y Osinergmin acepta, pero el dato de OCSA tiene {$sourceAge} min de antigüedad.",
             ]);
         }

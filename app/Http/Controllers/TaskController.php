@@ -414,7 +414,7 @@ class TaskController extends Controller
                             'speed' => $unit['speed'],
                             'latitude' => $unit['position']['latitude'],
                             'longitude' => $unit['position']['longitude'],
-                            'gpsDate' => now(),
+                            'gpsDate' => Carbon::parse($unit['gpsDate'])->setTimezone(config('app.timezone')),
                             'odometer' => $unit['odometer'],
                             'response_timestamp' => $date_osinergmin,
                             'response_message' => $response_message,

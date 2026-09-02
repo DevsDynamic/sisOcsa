@@ -10,6 +10,7 @@ use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\DB;
 // use DataTables;
 use Yajra\DataTables\DataTables;
+use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
@@ -38,6 +39,7 @@ class RoleController extends Controller
                         ->addIndexColumn()
                         ->addColumn('action', function ($role) {
                             $buttons = '';                            
+                            $manageable = $this->canDelegateRole(Role::find($role->id));
                             
                             // Obtener usuarios con el rol específico
                             $usersWithRole = User::visibleTo(auth()->user())->whereHas('roles', function ($query) use ($role) {
@@ -73,11 +75,11 @@ class RoleController extends Controller
                                                 </button>';
                                 }
                                 // Editar rol
-                                if (auth()->user()->can('roles.edit')) {
+                                if ($manageable && auth()->user()->can('roles.edit')) {
                                     $buttons .= '<a href="' . route('roles.edit', $role->id) . '" class="btn btn-warning btn-sm mr-1 mb-1" title="Editar usuario"><i class="fas fa-tasks"></i> Asignar permisos</a> ';
                                 }                                
                                 // Asignar rol
-                                if (auth()->user()->can('roles.assign_role')) {
+                                if ($manageable && auth()->user()->can('roles.assign_role')) {
                                     $buttons .= '<a href="" data-target="#modal-assign-role" data-toggle="modal" data-id="' . $role->id . '" data-name="' . $role->name . '" data-users-with-role=\'' . $usersWithRoleJson . '\' data-users-without-role=\'' . $usersWithoutRoleJson . '\'>
                                                     <button class="btn btn-primary btn-sm mr-1 mb-1" title="Asignar rol">
                                                         <i class="fas fa-user-shield"></i> Asignar rol
@@ -85,7 +87,7 @@ class RoleController extends Controller
                                                 </a>';
                                 }
                                 // Cambiar estado del rol
-                                if (auth()->user()->can('roles.change_status')) {                                    
+                                if ($manageable && auth()->user()->can('roles.change_status')) {
                                     $buttons .= '<a href="" data-target="#modal-change-status" data-toggle="modal" data-id="' . $role->id . '" data-status="inactivar">
                                                     <button class="btn btn-sm mr-1 mb-1 btn-danger" title="Inactivar rol">
                                                         <i class="fas fa-times-circle"></i> Inactivar
@@ -94,7 +96,7 @@ class RoleController extends Controller
                                 }
                             } else {
                                 // Activar rol
-                                if (auth()->user()->can('roles.change_status')) {
+                                if ($manageable && auth()->user()->can('roles.change_status')) {
                                     $buttons .= '<a href="" data-target="#modal-change-status" data-toggle="modal" data-id="' . $role->id . '" data-status="activar">
                                                     <button class="btn btn-sm mr-1 mb-1 btn-success" title="Activar usuario">
                                                         <i class="fas fa-check-circle"></i> Activar
@@ -116,8 +118,7 @@ class RoleController extends Controller
 
     public function create()
     {
-        // Obtener todos los permisos
-        $permissions = Permission::all();
+        $permissions = $this->grantablePermissions();
 
         // Organizar los permisos por módulos y submódulos
         $groupedPermissions = $permissions->groupBy('module')->map(function ($moduleGroup) {
@@ -132,7 +133,8 @@ class RoleController extends Controller
         // Validación de los datos del formulario
         $request->validate([
             'name' => 'required|string|max:255', // Asegura que el campo 'name' esté presente y sea una cadena de máximo 255 caracteres
-            'permissions' => 'required|array|min:1', // Asegura que 'permissions' sea un arreglo y tenga al menos un elemento
+            'permissions' => 'required|array|min:1',
+            'permissions.*' => ['integer', 'distinct', Rule::in($this->grantablePermissionIds())],
         ], [
             'permissions.min' => 'Debe seleccionar al menos un permiso.', // Mensaje personalizado de error para el mínimo de permisos
         ]);
@@ -172,8 +174,8 @@ class RoleController extends Controller
 
     public function edit(Role $role)
     {
-        // Obtener todos los permisos
-        $permissions = Permission::all();
+        $this->authorizeRoleDelegation($role);
+        $permissions = $this->grantablePermissions();
     
         // Obtener permisos del rol
         $rolePermissions = $role->permissions->pluck('id')->toArray();
@@ -188,19 +190,24 @@ class RoleController extends Controller
   
     public function update(Request $request, Role $role)
     {
+        $this->authorizeRoleDelegation($role);
         $request->validate([
-            'name' => 'required'
+            'name' => 'required|string|max:255',
+            'permissions' => 'nullable|array',
+            'permissions.*' => ['integer', 'distinct', Rule::in($this->grantablePermissionIds())],
         ]);
 
-        $role->update($request->all());
-
-        $role->permissions()->sync($request->permissions);
+        $role->update(['name' => $request->string('name')->toString()]);
+        $allowedIds = $this->grantablePermissionIds();
+        $protectedIds = $role->permissions()->pluck('permissions.id')->diff($allowedIds);
+        $role->permissions()->sync($protectedIds->merge($request->input('permissions', []))->unique()->values());
 
         return redirect()->route('roles.index')->with('success', 'Rol actualizado con éxito.');
     }
 
     public function destroy(Role $role)
     {
+        $this->authorizeRoleDelegation($role);
         $role->delete();
 
         return redirect()->route('roles.index')->with('info', 'ELIMINADO');
@@ -210,7 +217,8 @@ class RoleController extends Controller
     {
         $user = User::findOrFail($request->input('user_id'));
         abort_if($user->is_system_owner, 403, 'No se puede cambiar el rol del propietario del sistema.');
-        $role = $request->input('roles');
+        $role = Role::where('name', $request->input('roles'))->firstOrFail();
+        $this->authorizeRoleDelegation($role);
 
         // Remover todos los roles actuales del usuario
         $user->roles()->detach();
@@ -219,8 +227,8 @@ class RoleController extends Controller
         $user->assignRole($role);
 
         return response()->json([
-            'success' => 'rol <strong>' . $role . '</strong> asignado exitosamente al usuario seleccionado.',
-            'status' => $role
+            'success' => 'Rol <strong>' . e($role->name) . '</strong> asignado exitosamente al usuario seleccionado.',
+            'status' => $role->name
         ]);
     }
 
@@ -229,11 +237,11 @@ class RoleController extends Controller
         // Obtener datos del formulario
         $roleId = $request->input('role_id');
         $userIds = $request->input('users');
-    
+
+        $role = Role::findOrFail($roleId);
+        $this->authorizeRoleDelegation($role);
+
         try {
-            // Buscar el rol por su ID
-            $role = Role::findOrFail($roleId);
-    
             // **1. Quitar el rol de todos los usuarios (asegurarse de que no tienen más de un rol)**
             if (empty($userIds)) {
                 // Si no hay usuarios seleccionados, quitar el rol de todos los usuarios
@@ -284,6 +292,7 @@ class RoleController extends Controller
                 'error' => 'Rol no encontrado.'
             ], 404);
         }
+        $this->authorizeRoleDelegation($role);
 
         try {
             DB::beginTransaction();
@@ -307,5 +316,31 @@ class RoleController extends Controller
                 'error' => 'Error al cambiar el estado del rol: ' . $th->getMessage()
             ], 500);
         }
+    }
+
+    private function grantablePermissions()
+    {
+        return auth()->user()->is_system_owner
+            ? Permission::query()->get()
+            : auth()->user()->getAllPermissions();
+    }
+
+    private function grantablePermissionIds(): array
+    {
+        return $this->grantablePermissions()->pluck('id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    private function authorizeRoleDelegation(Role $role): void
+    {
+        abort_unless($this->canDelegateRole($role), 403, 'No puedes administrar un rol que contiene permisos superiores a los tuyos.');
+    }
+
+    private function canDelegateRole(?Role $role): bool
+    {
+        if (! $role || auth()->user()->is_system_owner) {
+            return true;
+        }
+
+        return $role->permissions()->pluck('permissions.id')->diff($this->grantablePermissionIds())->isEmpty();
     }
 }

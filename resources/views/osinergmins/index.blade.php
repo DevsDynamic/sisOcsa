@@ -10,8 +10,8 @@
 
 @section('content')
     <div class="integration-state-note"><i class="fas fa-info-circle"></i><span><strong>Estado de las unidades</strong>
-            <small><b>Operativo</b> confirma GPS reciente y envÃ­o aceptado. <b>GPS desactualizado</b> significa que
-                Osinergmin acepta la trama, pero la posiciÃ³n recibida desde OCSA es antigua.</small></span></div>
+            <small><b>Operativo</b> confirma posición reciente y envío aceptado. <b>Posición antigua</b> significa que
+                Osinergmin acepta la trama, pero OCSA no ha actualizado esa posición.</small></span></div>
     <div class="card client-units-card">
         <div class="card-body">
             <table id="tablaPrincipal" class="table table-hover" style="width:100%">
@@ -85,6 +85,7 @@
             align-items: center;
             justify-content: center
         }
+        .unit-tile>div { display:flex; min-width:0; flex-direction:column; align-items:flex-start; gap:5px }
 
         .unit-tile strong {
             display: block;
@@ -258,6 +259,8 @@
         }
 
         .unit-history-link {
+            display: block;
+            margin-top: 2px;
             color: #16889a;
             font-size: .75rem;
             font-weight: 700
@@ -301,6 +304,15 @@
                     '">Rechazado</span>';
                 return '<span class="status-pill unknown" title="Osinergmin respondió, pero no informó aceptación ni rechazo. Estado técnico: ' +
                     escapeHtml(value) + '">Sin confirmación</span>';
+            };
+            const unitIcon = unit => {
+                const type = String((unit.icon || '') + ' ' + (unit.name_unit || '')).toLowerCase();
+                if (type.includes('cisterna') || type.includes('tank')) return 'fa-truck-moving';
+                if (type.includes('camion') || type.includes('truck')) return 'fa-truck';
+                if (type.includes('bus')) return 'fa-bus';
+                if (type.includes('moto')) return 'fa-motorcycle';
+                if (type.includes('van')) return 'fa-shuttle-van';
+                return 'fa-car-side';
             };
 
             $('#tablaPrincipal').DataTable({
@@ -357,10 +369,10 @@
                             return '<div class="unit-grid">' + units.map(unit =>
                                 '<div class="unit-tile show-unit" role="button" tabindex="0" data-id="' +
                                 escapeHtml(unit.uuid) + '" data-plate="' + escapeHtml(unit
-                                    .plate) + '"><i class="fas fa-car-side"></i><div><strong>' +
+                                .plate) + '"><i class="fas ' + unitIcon(unit) + '"></i><div><strong>' +
                                 display(unit.plate) +
                                 '</strong><span class="unit-health-dot ' + escapeHtml(unit.operational?.tone || 'unknown') + '">' +
-                                display(unit.operational?.label || 'Sin historial') + '</span><span class="unit-history-link">Ver historial</span></div></div>'
+                                display(unit.operational?.label || 'Sin historial') + '</span><span class="unit-history-link"><i class="fas fa-history mr-1"></i>Ver historial</span></div></div>'
                                 ).join('') + '</div>';
                         }
                     }
@@ -432,7 +444,10 @@
                         {
                             data: 'event',
                             name: 'event',
-                            render: data => '<strong>' + display(data) + '</strong>'
+                            render: data => {
+                                const labels = {acc_on:'Encendido',acc_off:'Apagado',battery_dc:'Batería desconectada',none:'Sin evento'};
+                                return '<strong title="Código técnico: ' + escapeHtml(data || '') + '">' + display(labels[data] || data) + '</strong>';
+                            }
                         },
                         {
                             data: null,

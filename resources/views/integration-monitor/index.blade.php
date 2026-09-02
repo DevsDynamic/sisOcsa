@@ -24,12 +24,14 @@
 @section('js')<script>
 const monitorSections=['Errores por ejecución','Motivos de rechazo por unidad','Bitácora de los últimos 30 días'];
 const findMonitorCard=(root,title)=>Array.from(root.querySelectorAll('.card-title')).find(node=>node.textContent.trim()===title)?.closest('.card');
+const translateMonitor=()=>{const stages={RUN:'EJECUCIÓN',OCSA:'OCSA',OSINERGMIN:'OSINERGMIN',NETWORK:'RED',WAF:'FIREWALL',PROCESS:'PROCESO',CONFIG:'CONFIGURACIÓN'},states={SUCCESS:'CORRECTO',ERROR:'ERROR',STARTED:'INICIADO',SKIPPED:'OMITIDO',WARNING:'ADVERTENCIA',UNKNOWN:'SIN CONFIRMACIÓN'},environments={production:'Producción',development:'Demo'};const errors=findMonitorCard(document,'Errores por ejecución');errors?.querySelectorAll('tbody tr').forEach(row=>{const cell=row.cells[1];if(cell){const badge=cell.querySelector('.badge');if(badge)badge.textContent=stages[badge.textContent.trim()]||badge.textContent}});const logs=findMonitorCard(document,'Bitácora de los últimos 30 días');logs?.querySelectorAll('tbody tr').forEach(row=>{if(row.cells[1])row.cells[1].textContent=environments[row.cells[1].textContent.trim()]||row.cells[1].textContent;if(row.cells[2])row.cells[2].textContent=stages[row.cells[2].textContent.trim()]||row.cells[2].textContent;const badge=row.cells[3]?.querySelector('.badge');if(badge)badge.textContent=states[badge.textContent.trim()]||badge.textContent});};
 const loadMonitorSections=(url,onlyTitle=null,updateUrl=false)=>fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest',Accept:'text/html'}})
  .then(response=>response.ok?response.text():Promise.reject())
- .then(html=>{const documentNew=new DOMParser().parseFromString(html,'text/html');(onlyTitle?[onlyTitle]:monitorSections).forEach(title=>{const current=findMonitorCard(document,title),fresh=findMonitorCard(documentNew,title);if(current&&fresh)current.replaceWith(fresh)});if(updateUrl)history.pushState({},'',url)})
+ .then(html=>{const documentNew=new DOMParser().parseFromString(html,'text/html');(onlyTitle?[onlyTitle]:monitorSections).forEach(title=>{const current=findMonitorCard(document,title),fresh=findMonitorCard(documentNew,title);if(current&&fresh)current.replaceWith(fresh)});translateMonitor();if(updateUrl)history.pushState({},'',url)})
  .catch(()=>{});
 document.addEventListener('click',event=>{const link=event.target.closest('.card-footer .pagination a');if(!link)return;const card=link.closest('.card'),title=card?.querySelector('.card-title')?.textContent.trim();if(!monitorSections.includes(title))return;event.preventDefault();card.style.opacity='.55';loadMonitorSections(link.href,title,true).finally(()=>{if(document.contains(card))card.style.opacity=''})});
 window.addEventListener('popstate',()=>loadMonitorSections(location.href));
+translateMonitor();
 const monitorTimer=setInterval(()=>{if(!document.hidden&&!document.querySelector('details[open]')&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))loadMonitorSections(location.href)},60000);
 window.addEventListener('beforeunload',()=>clearInterval(monitorTimer));
 </script>@stop

@@ -27,7 +27,7 @@
                                 <th>Evento</th>
                                 <th>Movimiento</th>
                                 <th>Coordenadas</th>
-                                <th>Fecha GPS</th>
+                                <th>Fecha enviada</th>
                                 <th>Respuesta de Osinergmin</th>
                                 <th>Estado</th>
                             </tr>

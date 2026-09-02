@@ -303,6 +303,7 @@ class OsinergminController extends Controller
                         'uuid' => $unit['unit_id'] ?? null,
                         'plate' => $unit['number'] ?? 'Desconocido',
                         'name_unit' => $unit['label'] ?? '',
+                        'icon' => $unit['icon'] ?? '',
                         'mileage' => $unit['mileage'] ?? 0,
                         'last_update' => $unit['last_update'] ?? '',
                         'client_name' => $source->full_name,

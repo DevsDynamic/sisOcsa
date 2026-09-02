@@ -34,7 +34,7 @@ class UnitOperationalStatusTest extends TestCase
         );
 
         $this->assertSame('warning', $status['tone']);
-        $this->assertSame('GPS desactualizado', $status['label']);
+        $this->assertSame('Posición antigua', $status['label']);
         Carbon::setTestNow();
     }
 

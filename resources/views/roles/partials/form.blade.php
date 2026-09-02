@@ -1,6 +1,6 @@
 @php
-    $moduleNames = ['moduleSystem'=>'Administración del sistema','moduleRetransmission'=>'Retransmisión e integraciones','modulePeople'=>'Personas y clientes','moduleUsers'=>'Usuarios y seguridad','moduleReports'=>'Reportes'];
-    $subModuleNames = ['Configuration'=>'Configuración del sistema','IntegrationMonitor'=>'Monitor de integración','Osinergmin'=>'Osinergmin'];
+    $moduleNames = ['moduleSystem'=>'Administración del sistema','moduleRetransmission'=>'Retransmisión e integraciones','modulePerson'=>'Personas y clientes','moduleDashboard'=>'Panel principal'];
+    $subModuleNames = ['Configuration'=>'Configuración del sistema','IntegrationMonitor'=>'Monitor de integración','Osinergmin'=>'Osinergmin','Companies'=>'Empresas','Dashboard'=>'Panel principal','People'=>'Clientes y contactos','Roles'=>'Roles y permisos','Type-people'=>'Tipos de cliente','Users'=>'Usuarios'];
 @endphp
 <div class="role-editor">
  <div class="form-group mb-4"><label for="name">Nombre del rol <span class="text-danger">*</span></label><input id="name" type="text" name="name" class="form-control" placeholder="Ej. Supervisor de integración" value="{{ old('name',$role->name??'') }}">@error('name')<div class="text-danger mt-1">{{$message}}</div>@enderror</div>
